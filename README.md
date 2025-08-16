@@ -10,3 +10,6 @@ Repositório para análise de dados, ETL, segmentação, A/B test e análise fin
 - scripts/: Scripts utilitários
 - data/: Dados brutos e processados
 - report/: Relatório final
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](
+https://colab.research.google.com/github/<seu-usuario>/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb)
