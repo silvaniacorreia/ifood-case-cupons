@@ -1,26 +1,49 @@
 # iFood Case – Cupons
 
-Pipeline reprodutível para o case de cupons do iFood: **download programático dos dados**, setup de **PySpark**, e notebooks para **ETL, RFM, A/B** e **ROI** (em construção).
+Case para vaga de Analista de Dados no iFood, com o objetivo de analisar um **teste A/B** de uma estratégia de **cupons** com foco em **retenção** e crescimento.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb)
+**O case solicita que a entrega contemple, na ordem, os itens abaixo:**
+
+1) **Teste A/B (Campanha de Cupons)**
+   - **(a)** Definir **indicadores/métricas de sucesso** da campanha e analisar se houve **impacto estatisticamente significativo** no período avaliado.
+   - **(b)** Realizar **análise de viabilidade financeira** (ex.: ROI / payback), **explicitando as premissas** adotadas.
+   - **(c)** Recomendar **oportunidades de melhoria** na ação e **desenhar um novo teste A/B** para validar as hipóteses (desenho experimental, métricas e guardrails).
+
+2) **Segmentação de Usuários**
+   - **(a)** Estabelecer **critérios/ regras** para cada **segmento** (ex.: RFM), **explicando o racional** da construção.
+   - **(b)** Analisar os **resultados do A/B por segmento** e **propor ações específicas** para cada público.
+
+3) **Recomendações e Próximos Passos**
+   - Sugerir **próximos passos** com **previsão de impacto** (financeiro ou não), defendendo as recomendações para as **lideranças de Negócio**.
+   - Incluir **melhorias de processo/teste** e **estratégias diferenciadas por segmento**.  
+   - Quando necessário, **adotar premissas** e **deixá-las claras** no material.
+
+<a href="https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb" target="_blank" rel="noopener">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab">
+</a>
+
+> **O que este repositório entrega agora:** bootstrap reprodutível (local e Colab), **download programático** + extração, inicialização do **PySpark** e **smoke test**. As etapas de ETL, RFM, A/B e ROI estão sendo adicionadas na sequência.
+
+> **Como executar (avaliadores):** abra e rode **um notebook por vez na ordem** → `00_setup_and_checks` → `01_etl_pyspark` → `02_abtest_and_segments` → `03_financial_roi`.
 
 ---
 
-## ✅ Status (o que já está pronto)
+## ✅ Status (parcial)
 
-- **Download programático** e extração (`scripts/download_data.py`) lendo URLs do `config/settings.yaml`.
-- **Bootstrap Colab/Local** no `notebooks/00_setup_and_checks.ipynb`:
+- **Download programático** e extração (`scripts/download_data.py`) lendo as fontes de `config/settings.yaml`.
+- **Bootstrap Colab/Local** em `notebooks/00_setup_and_checks.ipynb`:
   - Colab: clona o repositório, instala dependências, baixa e prepara os dados.
   - Local: verifica paths e roda o mesmo script de download.
 - **Utilitários** (`src/utils.py`): `load_settings`, `get_spark`, `set_seeds`, `stop_spark`.
 - **Smoke test** do Spark no `00_setup_and_checks.ipynb`.
 
-> Próximas etapas (em construção): `src/etl.py`, `src/segments.py` (RFM), `src/abtest.py`, `src/finance.py` + notebooks `01_`, `02_`, `03_`.
+> Em construção: `src/etl.py`, `src/segments.py` (RFM), `src/abtest.py`, `src/finance.py` + notebooks `01_`, `02_`, `03_`.
 
 ---
 
-## 🧩 Estrutura
+## 🧩 Estrutura do repositório
 
+```markdown
 ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
@@ -42,6 +65,7 @@ ifood-case-cupons/
 │  ├─ raw/                           # arquivos baixados (spark lê .gz direto)
 │  └─ processed/                     # saídas intermediárias (parquet)
 └─ report/
+```
 
 ## ⚙️ Configuração
 
@@ -82,12 +106,6 @@ Após isso, os dados estarão em:
 ```
 
 Quando os notebooks seguintes forem concluídos, basta abrir `01_`, `02_` e `03_` e executar normalmente.
-
-**Observação:** para que o Colab consiga clonar via `git clone`, o repositório precisa estar público.
-Se ele estiver privado, há duas opções:
-
-1. Tornar público durante a avaliação, ou
-2. Abrir o notebook pelo menu `File → Open notebook → GitHub`, fazer login no GitHub e marcar “Include private repos”. Neste caso, se o clone falhar por permissão, o avaliador pode baixar o ZIP do repositório pelo GitHub e subir/arrastar para o Colab (pasta `/content/`), depois `cd /content/ifood-case-cupons` e rodar as células normalmente.
 
 ---
 
