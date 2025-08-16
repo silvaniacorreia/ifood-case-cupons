@@ -1,0 +1,20 @@
+# Python/venv
+.venv/
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Dados (NÃO versionar os brutos/processados)
+data/raw/
+data/processed/
+
+# Sistemas
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

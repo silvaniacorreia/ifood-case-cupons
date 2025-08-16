@@ -1,0 +1,40 @@
+runtime:
+  seed: 2025
+  spark:
+    app_name: "ifood-case"
+    shuffle_partitions: 64   
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  files:
+    orders_json_gz: "order.json.gz"
+    consumers_csv_gz: "consumer.csv.gz"
+    restaurants_csv_gz: "restaurant.csv.gz"
+    ab_test_tar_gz: "ab_test_ref.tar.gz"
+
+analysis:
+  use_cuped: true
+  winsorize: 0.02
+
+rfm:
+  quantiles: [0.2, 0.4, 0.6, 0.8]  
+finance:
+  take_rate: 0.15
+  coupon_cost_default: 6.0
+  coupon_cost_grid: [3, 6, 9, 12, 15]  
+
+sources:
+  orders:
+    url: "https://data-architect-test-source.s3-sa-east-1.amazonaws.com/order.json.gz"
+    filename: "order.json.gz"
+  consumers:
+    url: "https://data-architect-test-source.s3-sa-east-1.amazonaws.com/consumer.csv.gz"
+    filename: "consumer.csv.gz"
+  restaurants:
+    url: "https://data-architect-test-source.s3-sa-east-1.amazonaws.com/restaurant.csv.gz"
+    filename: "restaurant.csv.gz"
+  ab_test_ref:
+    url: "https://data-architect-test-source.s3-sa-east-1.amazonaws.com/ab_test_ref.tar.gz"
+    filename: "ab_test_ref.tar.gz"
+
