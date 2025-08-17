@@ -59,23 +59,26 @@ def set_seeds(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
 
-def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | None = None):
-    builder = (
-        SparkSession.builder
-        .appName(app_name)
-        .master("local[*]")
-        .config("spark.sql.shuffle.partitions", str(shuffle_partitions))
-    )
+def get_spark(app_name: str,
+              shuffle_partitions: int = 64,
+              extra_conf: dict | None = None):
+    base_conf = {
+        "spark.sql.shuffle.partitions": str(shuffle_partitions),
+        "spark.sql.adaptive.enabled": "true",                 
+        "spark.sql.adaptive.coalescePartitions.enabled": "true",
+        "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
+        "spark.sql.session.timeZone": "UTC",
+        "spark.ui.showConsoleProgress": "false",
+    }
     if extra_conf:
-        for k, v in extra_conf.items():
-            builder = builder.config(k, v)
+        base_conf.update({k: str(v) for k, v in extra_conf.items()})
+
+    builder = SparkSession.builder.appName(app_name).master("local[*]")
+    for k, v in base_conf.items():
+        builder = builder.config(k, v)
 
     spark = builder.getOrCreate()
-    spark.conf.set("spark.sql.shuffle.partitions", str(shuffle_partitions))
-    if extra_conf:
-        for k, v in extra_conf.items():
-            spark.conf.set(k, v)
-
+    spark.sparkContext.setLogLevel("WARN")  # menos ruído no console
     return spark
 
 def stop_spark(spark: SparkSession):

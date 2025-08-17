@@ -4,7 +4,7 @@ Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um 
 
 > Execução **100% no Google Colab** para máxima reprodutibilidade (sem dependências locais).
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/pipeline_analise_completa.ipynb)
 
 ---
 
@@ -50,13 +50,17 @@ ifood-case-cupons/
 
 ## 🧱 Arquitetura & otimizações atuais
 
-- **Execução 100% no Colab**: o notebook clona o repositório, instala dependências e baixa os dados automaticamente.
-- **Sharding de `orders`**: na **1ª execução**, `order.json.gz` é dividido em várias partes (`data/raw/orders_sharded/part-*.json`) para viabilizar **leitura paralela** nas próximas execuções.
-- **Spark otimizado (AQE + Kryo)**: `spark.sql.adaptive.enabled=true`, `spark.serializer=Kryo`, `shuffle_partitions=32`, `files.maxPartitionBytes=64m`, `autoBroadcastJoinThreshold=50MB`.
-- **Joins eficientes**: `repartition` do **conformado** por `customer_id` antes dos joins e **broadcast** de dimensões pequenas (`restaurants` e, se couber, `abmap`).
-- **Guardrail de evento**: `event_ts_utc` só usa `scheduled_utc` se `scheduled_utc ≥ created_utc`; janela do experimento pode ser **inferida por quantis (1–99%)** para robustez a outliers.
-- **PII**: `cpf`/telefone **hasheados**, campos sensíveis removidos das camadas analíticas.
-- **Parquet opcional**: para reduzir picos de memória no Colab, salvamos apenas quando necessário, com `coalesce(4)` e limpeza de cache prévia.
+### Configurações avançadas do Spark
+- **Adaptive Query Execution (AQE)**: `spark.sql.adaptive.enabled=true` permite que o Spark ajuste dinamicamente o plano de execução com base nos dados processados.
+- **Kryo serialization**: `spark.serializer=org.apache.spark.serializer.KryoSerializer` para serialização mais eficiente.
+- **Reparticionamento eficiente**: `spark.sql.shuffle.partitions=32` ajustado com base em benchmarks no Colab.
+- **Broadcast explícito**: aplicado a dimensões pequenas (`restaurants` e `abmap`) para otimizar os joins.
+- **Persistência estratégica**: uso de `.cache()` nos DataFrames principais para evitar recomputação em etapas subsequentes.
+
+### Otimizações no ETL
+- **Cache estratégico**: DataFrames como `orders`, `consumers`, `restaurants` e `abmap` são cacheados após conformação para melhorar o desempenho em operações repetidas.
+- **Seleção de colunas antes dos joins**: reduz o uso de memória e I/O, mantendo apenas as colunas necessárias.
+- **Parquet como formato de saída**: após o ETL, os DataFrames processados podem ser salvos em Parquet para acelerar leituras futuras.
 
 ---
 
@@ -65,13 +69,12 @@ ifood-case-cupons/
 ### Execução no Colab
 
 1. Abra o notebook **no Colab**:  
-   [**analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
+   [**pipeline_analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/pipeline_analise_completa.ipynb)
 
 2. **Runtime → Run all**. A primeira célula:
    - clona/atualiza o repositório;
    - instala as dependências de `requirements.txt`;
    - roda o **download programático** (`scripts/download_data.py`);
-   - **(somente na 1ª execução)** faz **sharding** de `order.json.gz` em `data/raw/orders_sharded/` para acelerar leituras futuras.
 
 3. O notebook então executa:
    - **Pré-flight** (fail-fast) dos arquivos baixados;  
@@ -130,11 +133,6 @@ runtime:
 ### Persistência e formato de saída
 - **Persistência estratégica**: usamos `.cache()` para evitar recomputação em etapas subsequentes.  
 - **Parquet**: após o ETL, os DataFrames processados podem ser salvos em Parquet para acelerar leituras futuras.
-
-- **Sharding de `orders`**: `order.json.gz` (gzip não splittable) é particionado em `.json` na 1ª execução; nas próximas, a leitura é paralela.
-- **Repartition no ponto certo**: `repartition(shuffle_partitions, "customer_id")` aplicado **no conformado** antes dos joins; dimensões com **broadcast**.
-- **Guardrail de `event_ts_utc`**: só usa `scheduled_utc` se `scheduled_utc ≥ created_utc`; janela do experimento pode ser **inferida por quantis (1–99%)**.
-- **Escrita segura**: antes de materializar, fazemos `spark.catalog.clearCache()` e `df.coalesce(4)` para evitar picos de RAM no Colab.
 
 ---
 
