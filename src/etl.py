@@ -69,7 +69,14 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
                 data = [json.loads(line) for line in f if line.strip()]
                 return spark.createDataFrame(data)
 
-    orders = read_orders_auto(orders_path)
+    orders_sharded = Path(raw_dir) / "orders_sharded"
+    if orders_sharded.exists() and any(orders_sharded.glob("part-*.json")):
+        print("[ETL] Lendo orders a partir de shards:", orders_sharded)
+        orders = spark.read.json(str(orders_sharded / "part-*.json"))
+    else:
+        print("[ETL] Lendo orders do único .gz (primeira vez, 1 task):", orders_path)
+        orders = read_orders_auto(orders_path)
+
 
     consumers = (
         spark.read
@@ -125,26 +132,24 @@ def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFram
 
     tz_col = F.coalesce(col_or_null("merchant_timezone", "string"), F.lit(business_tz))
     o = (o
-         .withColumn("created_utc",   F.to_utc_timestamp(F.col("order_created_at"), tz_col))
-         .withColumn("scheduled_utc", F.to_utc_timestamp(F.col("order_scheduled_date"), tz_col))
-         .withColumn(
-             "event_ts_utc",
-         F.when(
-             (F.col("order_scheduled") == True) &
-             F.col("scheduled_utc").isNotNull() &
-             (F.col("scheduled_utc") >= F.col("created_utc")),   
-             F.col("scheduled_utc")
-         ).otherwise(F.col("created_utc"))
-         )
-         .withColumn("event_date_brt", F.to_date(F.from_utc_timestamp(F.col("event_ts_utc"), business_tz)))
+        .withColumn("created_utc",   F.to_utc_timestamp(F.col("order_created_at"), tz_col))
+        .withColumn("scheduled_utc", F.to_utc_timestamp(F.col("order_scheduled_date"), tz_col))
+        .withColumn(
+            "event_ts_utc",
+            F.when(
+                (F.col("order_scheduled") == True) &
+                F.col("scheduled_utc").isNotNull() &
+                (F.col("scheduled_utc") >= F.col("created_utc")),  
+                F.col("scheduled_utc")
+            ).otherwise(F.col("created_utc"))
+        )
+        .withColumn("event_date_brt", F.to_date(F.from_utc_timestamp(F.col("event_ts_utc"), business_tz)))
     )
 
     if "items" in cols:
         if isinstance(orders.schema["items"].dataType, ArrayType):
-            # items já é array -> conta direto
             o = o.withColumn("basket_size", F.size(F.col("items")))
         else:
-            # items é string -> se parecer JSON array, faz parse e conta
             o = (
                 o.withColumn(
                     "items_parsed",
@@ -159,7 +164,7 @@ def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFram
                 .withColumn(
                     "basket_size",
                     F.when(F.col("items_parsed").isNotNull(), F.size("items_parsed"))
-                    .otherwise(F.lit(None).cast("int"))
+                     .otherwise(F.lit(None).cast("int"))
                 )
                 .drop("items_parsed")
             )

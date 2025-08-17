@@ -1,9 +1,16 @@
 runtime:
-  seed: 2025
   spark:
-    app_name: "ifood-case"
-    shuffle_partitions: 64   
+    app_name: "ifood-case-cupons"
     driver_memory: "12g"
+    shuffle_partitions: 32
+    conf:
+      spark.master: "local[*]"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark.sql.files.maxPartitionBytes: "64m"
+      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+      spark.memory.fraction: "0.6"
+      spark.sql.autoBroadcastJoinThreshold: "50MB"
 
 data:
   raw_dir: "data/raw"

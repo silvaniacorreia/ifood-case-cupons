@@ -1,4 +1,4 @@
-# Case Ifood: Teste A/B Estratégia de Cupons
+# Case iFood: Teste A/B Estratégia de Cupons
 
 Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um **teste A/B** de cupons com foco em **retenção** e crescimento.
 
@@ -21,6 +21,7 @@ Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um 
 
 3) **Próximos passos**  
    Estimativa de **impacto** (financeiro ou não) e sugestões de **processo/teste**.
+
 ---
 
 ## 🗂️ Estrutura do repositório
@@ -30,11 +31,7 @@ ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
 ├─ notebooks/
-│  ├─ 00_setup_and_checks.ipynb      # bootstrap + download programático + smoke Spark
-│  ├─ 01_etl_pyspark.ipynb           # ETL e silvers (orders/users)
-│  ├─ 02_abtest_core.ipynb           # (em construção) A/B métricas + significância
-│  ├─ 03_financial_viability.ipynb   # (em construção) ROI e sensibilidade
-│  └─ 04_segments_ab_by_segment.ipynb# (em construção) RFM + leitura do A/B por segmento
+│  ├─ pipeline_analise_completa.ipynb  # notebook principal (orquestração da análise)
 ├─ src/
 │  ├─ __init__.py
 │  ├─ utils.py                       # settings + spark + seeds
@@ -42,7 +39,6 @@ ifood-case-cupons/
 ├─ scripts/
 │  └─ download_data.py               # baixa .gz/.tar.gz; extrai tar e limpa artefatos
 ├─ config/
-│  ├─ settings.example.yaml
 │  └─ settings.yaml                  # fontes + parâmetros (ver abaixo)
 ├─ data/
 │  ├─ raw/                           # arquivos baixados
@@ -52,15 +48,30 @@ ifood-case-cupons/
 
 ---
 
+## 🧱 Arquitetura & otimizações atuais
+
+- **Execução 100% no Colab**: o notebook clona o repositório, instala dependências e baixa os dados automaticamente.
+- **Sharding de `orders`**: na **1ª execução**, `order.json.gz` é dividido em várias partes (`data/raw/orders_sharded/part-*.json`) para viabilizar **leitura paralela** nas próximas execuções.
+- **Spark otimizado (AQE + Kryo)**: `spark.sql.adaptive.enabled=true`, `spark.serializer=Kryo`, `shuffle_partitions=32`, `files.maxPartitionBytes=64m`, `autoBroadcastJoinThreshold=50MB`.
+- **Joins eficientes**: `repartition` do **conformado** por `customer_id` antes dos joins e **broadcast** de dimensões pequenas (`restaurants` e, se couber, `abmap`).
+- **Guardrail de evento**: `event_ts_utc` só usa `scheduled_utc` se `scheduled_utc ≥ created_utc`; janela do experimento pode ser **inferida por quantis (1–99%)** para robustez a outliers.
+- **PII**: `cpf`/telefone **hasheados**, campos sensíveis removidos das camadas analíticas.
+- **Parquet opcional**: para reduzir picos de memória no Colab, salvamos apenas quando necessário, com `coalesce(4)` e limpeza de cache prévia.
+
+---
+
 ## ▶️ Como executar
+
+### Execução no Colab
 
 1. Abra o notebook **no Colab**:  
    [**analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
 
-2. Menu **Ambiente de Execução → Executar Tudo**. A primeira célula:
-   - clona/atualiza o repositório;  
-   - instala as dependências do `requirements.txt`;  
-   - roda o **download programático** (`scripts/download_data.py`).
+2. **Runtime → Run all**. A primeira célula:
+   - clona/atualiza o repositório;
+   - instala as dependências de `requirements.txt`;
+   - roda o **download programático** (`scripts/download_data.py`);
+   - **(somente na 1ª execução)** faz **sharding** de `order.json.gz` em `data/raw/orders_sharded/` para acelerar leituras futuras.
 
 3. O notebook então executa:
    - **Pré-flight** (fail-fast) dos arquivos baixados;  
@@ -72,38 +83,79 @@ ifood-case-cupons/
 
 ---
 
-## ⚙️ Parâmetros importantes (`config/settings.yaml`)
+## ⚙️ Configurações importantes (`config/settings.yaml`)
 
 | Caminho                         | Descrição |
 |--------------------------------|-----------|
 | `data.raw_dir`                 | Pasta dos brutos (default: `data/raw`) |
 | `data.processed_dir`           | Pasta dos parquet (se habilitar salvar) |
-| `runtime.spark.shuffle_partitions` | Nº de partições p/ shuffles/joins (usado no `repartition`) |
 | `runtime.spark.driver_memory`  | Memória do driver no Colab (`12g`) |
 | `analysis.business_tz`         | TZ de negócio (default `America/Sao_Paulo`) |
 | `analysis.experiment_window`   | **auto-inferida** |
 | `analysis.auto_infer_window`   | `true`/`false` — ativa a inferência de janela |
 | `analysis.treat_is_target_null_as_control` | `false` por padrão (linhas sem grupo são excluídas) |
 | `analysis.winsorize`/`use_cuped` | Parâmetros para A/B (aplicados nas análises) |
+| `runtime.spark.conf.*`        | Confs avançadas do Spark (AQE, Kryo, partições, broadcast etc.) |
+
+**Exemplo de `runtime.spark.conf` usado no Colab:**
+```yaml
+runtime:
+  spark:
+    app_name: "ifood-case-cupons"
+    driver_memory: "12g"
+    shuffle_partitions: 32
+    conf:
+      spark.master: "local[*]"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark.sql.files.maxPartitionBytes: "64m"
+      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+      spark.memory.fraction: "0.6"
+      spark.sql.autoBroadcastJoinThreshold: "50MB"
+```
 
 ---
 
-## 🧱 Decisões técnicas & premissas (essenciais para explicar)
+## 🧱 Decisões técnicas & otimizações de desempenho
 
+### Formato e leitura dos dados
 - **Formato de `orders`**: detectado como **NDJSON**; leitura com `spark.read.json(...)`.  
   - Como o arquivo é grande e gzip não é splittable, a leitura inicial roda em 1 task; após ler, fazemos:  
     **`o = o.repartition(spark.sql.shuffle.partitions, 'customer_id')`** para **distribuir** o trabalho nos joins.
   - **Broadcast** de dimensões: `restaurants` sempre (pequena) e `abmap` se `count ≤ 2M`.
-- **Timezone**: criamos `event_ts_utc` (UTC canônico). Para análises diárias de negócio, usamos `event_date_brt` (UTC → BRT).  
-- **Evento**: se `order_scheduled==true` e há `order_scheduled_date`, o **evento** é a data agendada; caso contrário, a de criação.  
-- **PII**: `cpf` e telefone geram `*_hash`; campos sensíveis (nome/endereço) **removidos** nas “silver”.  
-- **Qualidade de dados**:  
-  - descartamos `order_id` ou `customer_id` **nulos**, `order_id` **duplicado**;  
-  - `order_total_amount` negativo vira **nulo**;  
-  - coordenadas de `merchant_*` fora do intervalo válido viram **nulo**.  
-- **Janela do experimento**: se não definida, inferimos `[min, max+1)` e reportamos no log (UTC).  
-- **Sem marcação A/B (`is_target` nulo)**: **excluímos** por padrão (evitar viés); pode ser mudado por config.  
-- **Persistência**: por padrão **não** salvamos Parquet no Colab (`SAVE_PARQUET=False`) — tudo roda **em memória**; habilitar apenas se necessário.
+
+### Configuração do Spark
+- **driver_memory**: ajustado para **12g** para evitar problemas de memória.
+
+### Persistência e formato de saída
+- **Persistência estratégica**: usamos `.cache()` para evitar recomputação em etapas subsequentes.  
+- **Parquet**: após o ETL, os DataFrames processados podem ser salvos em Parquet para acelerar leituras futuras.
+
+- **Sharding de `orders`**: `order.json.gz` (gzip não splittable) é particionado em `.json` na 1ª execução; nas próximas, a leitura é paralela.
+- **Repartition no ponto certo**: `repartition(shuffle_partitions, "customer_id")` aplicado **no conformado** antes dos joins; dimensões com **broadcast**.
+- **Guardrail de `event_ts_utc`**: só usa `scheduled_utc` se `scheduled_utc ≥ created_utc`; janela do experimento pode ser **inferida por quantis (1–99%)**.
+- **Escrita segura**: antes de materializar, fazemos `spark.catalog.clearCache()` e `df.coalesce(4)` para evitar picos de RAM no Colab.
+
+---
+
+## 🧰 O notebook como orquestrador técnico
+
+O notebook **pipeline_analise_completa.ipynb** funciona como um **orquestrador técnico** das tarefas de análise, integrando os diferentes módulos do repositório:
+
+1. **Configuração inicial**:
+   - Clona o repositório e instala as dependências.
+   - Faz o download programático dos dados brutos.
+
+2. **Configuração do Spark**:
+   - Lê as configurações do arquivo `settings.yaml` e inicializa o Spark com parâmetros ajustados para o Colab.
+
+3. **Execução das tarefas**:
+   - **Pré-flight**: validação dos arquivos brutos.
+   - **ETL**: utiliza funções do módulo `src/etl.py` para ingestão, conformação e geração dos DataFrames "silver".
+   - **Análises**: executa métricas de A/B, ROI e segmentação, utilizando funções específicas dos módulos `src/utils.py` e `src/checks.py`.
+
+4. **Orquestração**:
+   - O notebook organiza a execução das etapas de forma sequencial, garantindo que cada tarefa seja realizada com base nos resultados da anterior.
 
 ---
 
@@ -135,15 +187,6 @@ Esses passos mostram maturidade de engenharia e evitam “rodar com tabelas vazi
 
 ---
 
-## 🧰 Solução de problemas (Colab)
-
-- **Execução lenta no começo**: esperado por causa de `orders` (~1.6 GB gz, gzip não splittable). Após a leitura, o ETL paraleliza.  
-- **Out of memory**: aumente `runtime.spark.driver_memory` no `settings.yaml` (ex.: `12g`) e reduza o número de colunas exibidas (menos `.toPandas()` em previews).  
-- **Erro de rede no download**: reexecute a 1ª célula (o script é idempotente).  
-- **CSV do A/B não encontrado**: o pré-flight falha cedo e indica o problema na pasta `data/raw/ab_test_ref_extracted/`.
-
----
-
 ## 🔒 Privacidade
 
 - Dados PII **não** são mantidos nas camadas analíticas (hash/removidos).  
@@ -154,7 +197,7 @@ Esses passos mostram maturidade de engenharia e evitam “rodar com tabelas vazi
 ## 📌 Resumo para a apresentação
 
 - **Por que Colab-only?** Reprodutibilidade e simplicidade para os avaliadores.  
-- **Gargalo conhecido**: `orders` é grande e gzip não splittable → leitura 1 task; depois **repartition + broadcast**.  
+- **Gargalo conhecido**: `orders` é grande e gzip não é splittable → leitura 1 task; depois **repartition + broadcast**.  
 - **Qualidade**: pré-flight fail-fast + profiling guiando o ETL; timezone/PII/validações.  
 - **A/B → ROI → RFM** na ordem pedida, com **premissas explícitas** e **próximos passos**.
 
