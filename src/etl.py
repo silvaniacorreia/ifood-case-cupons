@@ -63,7 +63,7 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
                     break
             f.seek(0)
             if first_non_ws == "[":
-                data = json.load(f)  # JSON array (ok para tamanho do case)
+                data = json.load(f) 
                 return spark.createDataFrame(data)
             else:
                 data = [json.loads(line) for line in f if line.strip()]
@@ -274,9 +274,18 @@ def clean_and_conform(
     print("[ETL] counts: orders_conformed (event_ts_utc not null) =", o.filter(F.col("event_ts_utc").isNotNull()).count())
     print("[ETL] counts: abmap =", a.count())
 
+    parts = int(o.sql_ctx.getConf("spark.sql.shuffle.partitions"))
+    o = o.repartition(parts, "customer_id")
+
+    # (opcional) broadcast dims pequenas
+    from pyspark.sql.functions import broadcast
+    r = broadcast(r)
+    if a.count() <= 2_000_000:
+        a = broadcast(a)
+
     df = (o.join(c, on="customer_id", how="left")
-           .join(r, on="merchant_id", how="left")
-           .join(a, on="customer_id", how="left"))
+            .join(r, on="merchant_id", how="left")
+            .join(a, on="customer_id", how="left"))
 
     print("[ETL] after join (total) =", df.count())
 

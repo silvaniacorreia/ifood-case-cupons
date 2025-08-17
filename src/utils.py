@@ -58,7 +58,7 @@ def set_seeds(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
 
-def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = "8g") -> SparkSession:
+def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = "12g") -> SparkSession:
     builder = (
         SparkSession.builder
         .master("local[*]")            

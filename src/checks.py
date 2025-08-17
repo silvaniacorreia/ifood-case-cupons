@@ -2,6 +2,7 @@ from __future__ import annotations
 import os, gzip, json, tarfile
 from pathlib import Path
 from typing import List, Dict, Any
+from pyspark.sql import functions as F
 
 REQUIRED_FILES = {
     "orders":      "order.json.gz",
@@ -123,3 +124,53 @@ def preflight(raw_dir: str | Path, strict: bool = True) -> Dict[str, Any]:
         raise RuntimeError(msg)
 
     return report
+
+def profile_loaded(orders, consumers, restaurants, abmap, n: int = 5):
+    """Resumo rápido dos 4 DataFrames já carregados (orienta o ETL)."""
+
+    def _nulls(df):
+        exprs = [F.sum(F.col(c).isNull().cast("int")).alias(c) for c in df.columns]
+        return df.select(exprs)
+
+    print("\n=== PROFILE: ORDERS ===")
+    print("rows:", orders.count())
+    orders.printSchema()
+    try:
+        orders.select("order_id","customer_id","merchant_id","order_total_amount","order_created_at").show(n, truncate=False)
+    except Exception:
+        orders.show(n, truncate=False)
+    # faixa de datas (tentando colunas mais comuns)
+    for ts in ["order_created_at","event_ts_utc"]:
+        if ts in orders.columns:
+            orders.agg(F.min(ts).alias("min_"+ts), F.max(ts).alias("max_"+ts)).show()
+    # nulos em campos-chave
+    keys = [c for c in ["order_id","customer_id","merchant_id","order_total_amount"] if c in orders.columns]
+    if keys:
+        _nulls(orders.select(*keys)).show(truncate=False)
+
+    print("\n=== PROFILE: CONSUMERS ===")
+    print("rows:", consumers.count())
+    consumers.printSchema()
+    consumers.show(n, truncate=False)
+    keys = [c for c in ["customer_id","active","language","created_at","consumer_created_at"] if c in consumers.columns]
+    if keys:
+        _nulls(consumers.select(*keys)).show(truncate=False)
+
+    print("\n=== PROFILE: RESTAURANTS ===")
+    print("rows:", restaurants.count())
+    restaurants.printSchema()
+    restaurants.show(n, truncate=False)
+    keys = [c for c in ["merchant_id","enabled","price_range","average_ticket","delivery_time"] if c in restaurants.columns]
+    if keys:
+        _nulls(restaurants.select(*keys)).show(truncate=False)
+
+    print("\n=== PROFILE: ABMAP ===")
+    print("rows:", abmap.count())
+    abmap.printSchema()
+    abmap.show(n, truncate=False)
+    # distribuição do grupo
+    for g in ["is_target","target","treatment","group","ab_group","variant","bucket"]:
+        if g in abmap.columns:
+            abmap.groupBy(g).count().show()
+            break
+
