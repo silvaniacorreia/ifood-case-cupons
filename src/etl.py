@@ -140,27 +140,29 @@ def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFram
     )
 
     if "items" in cols:
-        o = (
-            o.withColumn(
-                "items_parsed",
-                F.when(
-                    F.col("items").cast("string").rlike(r"^\s*\["),
-                    F.from_json(
-                        F.col("items").cast("string"),
-                        ArrayType(MapType(StringType(), StringType()))
+        if isinstance(orders.schema["items"].dataType, ArrayType):
+            # items já é array -> conta direto
+            o = o.withColumn("basket_size", F.size(F.col("items")))
+        else:
+            # items é string -> se parecer JSON array, faz parse e conta
+            o = (
+                o.withColumn(
+                    "items_parsed",
+                    F.when(
+                        F.col("items").cast("string").rlike(r"^\s*\["),
+                        F.from_json(
+                            F.col("items").cast("string"),
+                            ArrayType(MapType(StringType(), StringType()))
+                        )
                     )
                 )
+                .withColumn(
+                    "basket_size",
+                    F.when(F.col("items_parsed").isNotNull(), F.size("items_parsed"))
+                    .otherwise(F.lit(None).cast("int"))
+                )
+                .drop("items_parsed")
             )
-            .withColumn(
-                "basket_size",
-                F.when(
-                    F.col("items_parsed").isNotNull(), F.size("items_parsed")
-                ).when(
-                    F.schema["items"].dataType.jsonValue().get("type") == "array", F.size("items")
-                ).otherwise(F.lit(None).cast("int"))
-            )
-            .drop("items_parsed")
-        )
     else:
         o = o.withColumn("basket_size", F.lit(None).cast("int"))
 
@@ -290,28 +292,49 @@ def clean_and_conform(
     experiment_end: str | None = None,
     auto_infer_window: bool = True,
 ) -> DataFrame:
+    # Conformações
     o = conform_orders(orders, business_tz=business_tz)
     c = conform_consumers(consumers)
     r = conform_restaurants(restaurants)
     a = conform_abmap(abmap)
 
+    # Cache DataFrames que serão usados repetidamente
+    o = o.cache()
+    c = c.cache()
+    r = r.cache()
+    a = a.cache()
+
     print("[ETL] counts: orders_raw =", orders.count())
     print("[ETL] counts: orders_conformed (event_ts_utc not null) =", o.filter(F.col("event_ts_utc").isNotNull()).count())
     print("[ETL] counts: abmap =", a.count())
 
+    # Reparticionamento eficiente (apenas uma vez, após conformações)
     parts = int(o.sql_ctx.getConf("spark.sql.shuffle.partitions"))
     o = o.repartition(parts, "customer_id")
 
+    # Seleciona apenas colunas necessárias antes dos joins
+    c = c.select("customer_id", "language", "active", "phone_hash", "consumer_created_at")
+    r = r.select(
+        "merchant_id", "enabled", "price_range", "average_ticket", "delivery_time",
+        "minimum_order_value", "merchant_city", "merchant_state", "merchant_country", "merchant_created_at"
+    )
+    a = a.select("customer_id", "is_target")
+
+    # Broadcast joins para dimensões pequenas
     r = broadcast(r)
     if a.count() <= 2_000_000:
         a = broadcast(a)
 
-    df = (o.join(c, on="customer_id", how="left")
-            .join(r, on="merchant_id", how="left")
-            .join(a, on="customer_id", how="left"))
+    # Joins
+    df = (
+        o.join(c, on="customer_id", how="left")
+         .join(r, on="merchant_id", how="left")
+         .join(a, on="customer_id", how="left")
+    )
 
     print("[ETL] after join (total) =", df.count())
 
+    # Filtro de grupo
     if treat_is_target_null_as_control:
         df = df.withColumn("is_target", F.coalesce(F.col("is_target"), F.lit(0)))
     else:
@@ -319,6 +342,7 @@ def clean_and_conform(
         df = df.filter(F.col("is_target").isNotNull())
         print("[ETL] drop is_target null ->", before, "→", df.count())
 
+    # Janela do experimento
     start_str, end_str = experiment_start, experiment_end
     if auto_infer_window and not (start_str or end_str):
         mm = (o.agg(F.min("event_ts_utc").alias("min_ts"),
@@ -338,6 +362,9 @@ def clean_and_conform(
         df = df.filter(F.col("event_ts_utc") < F.to_timestamp(F.lit(end_str)))
     if (start_str or end_str):
         print("[ETL] filtro janela ->", before, "→", df.count())
+
+    # Persistência estratégica para evitar recomputação em etapas seguintes
+    df = df.cache()
 
     return df
 
