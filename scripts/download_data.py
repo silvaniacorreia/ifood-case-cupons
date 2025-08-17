@@ -6,6 +6,35 @@ from typing import Tuple
 import requests
 from tqdm import tqdm
 import yaml
+import gzip
+
+def shard_ndjson_gz(src_gz: Path, out_dir: Path, target_mb: int = 100) -> None:
+    """
+    Converte um único NDJSON .gz em vários .json 'part-xxxxx.json' (~target_mb cada).
+    - Idempotente: se as partes já existirem, não refaz.
+    - Não altera o conteúdo (só divide por linhas).
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if any(out_dir.glob("part-*.json")):
+        print(f"[shard] Já existem partes em {out_dir}, skip.")
+        return
+
+    lines_per_part = max(200_000, int(target_mb * 10_000))
+    part_idx, line_idx = 0, 0
+    fout = open(out_dir / f"part-{part_idx:05d}.json", "w", encoding="utf-8")
+
+    print(f"[shard] Iniciando shard de {src_gz} para {out_dir} (target ~{target_mb}MB/parte)")
+    with gzip.open(src_gz, "rt", encoding="utf-8") as fin:
+        for line in fin:
+            fout.write(line)
+            line_idx += 1
+            if line_idx >= lines_per_part:
+                fout.close()
+                part_idx += 1
+                line_idx = 0
+                fout = open(out_dir / f"part-{part_idx:05d}.json", "w", encoding="utf-8")
+    fout.close()
+    print(f"[shard] Geradas {part_idx+1} partes.")
 
 def load_settings(path: str = "config/settings.yaml") -> dict:
     if not os.path.exists(path):
@@ -69,6 +98,12 @@ def main():
                 print(f"[extract] {filename} -> {out}")
                 extract_tar_gz(dest, out)
                 remove_mac_artifacts(out)
+
+    # 3) SHARD do orders.json.gz para leitura paralela nas próximas execuções
+    orders_gz = raw_dir / "order.json.gz"
+    sharded_dir = raw_dir / "orders_sharded"
+    if orders_gz.exists():
+        shard_ndjson_gz(orders_gz, sharded_dir, target_mb=100)
 
     print("Downloads finalizados. Para ler no ETL:")
     print(" - JSON/CSV .gz: Spark lê nativamente comprimidos (não precisa extrair).")

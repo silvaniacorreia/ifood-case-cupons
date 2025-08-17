@@ -59,18 +59,23 @@ def set_seeds(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
 
-def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = "12g") -> SparkSession:
+def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | None = None):
     builder = (
         SparkSession.builder
-        .master("local[*]")
         .appName(app_name)
+        .master("local[*]")
         .config("spark.sql.shuffle.partitions", str(shuffle_partitions))
-        .config("spark.sql.session.timeZone", "UTC")
-        .config("spark.ui.showConsoleProgress", "false")
-        .config("spark.driver.memory", driver_memory)
     )
+    if extra_conf:
+        for k, v in extra_conf.items():
+            builder = builder.config(k, v)
+
     spark = builder.getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
+    spark.conf.set("spark.sql.shuffle.partitions", str(shuffle_partitions))
+    if extra_conf:
+        for k, v in extra_conf.items():
+            spark.conf.set(k, v)
+
     return spark
 
 def stop_spark(spark: SparkSession):
