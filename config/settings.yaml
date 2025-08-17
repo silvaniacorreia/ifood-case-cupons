@@ -2,7 +2,7 @@ runtime:
   seed: 2025
   spark:
     app_name: "ifood-case"
-    shuffle_partitions: 64   
+    shuffle_partitions: 128  
     driver_memory: "12g"
 
 data:

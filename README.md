@@ -1,4 +1,4 @@
-# Case Ifood: Teste A/B Estratégia de Cupons
+# Case iFood: Teste A/B Estratégia de Cupons
 
 Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um **teste A/B** de cupons com foco em **retenção** e crescimento.
 
@@ -21,6 +21,7 @@ Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um 
 
 3) **Próximos passos**  
    Estimativa de **impacto** (financeiro ou não) e sugestões de **processo/teste**.
+
 ---
 
 ## 🗂️ Estrutura do repositório
@@ -54,6 +55,8 @@ ifood-case-cupons/
 
 ## ▶️ Como executar
 
+### Execução no Colab
+
 1. Abra o notebook **no Colab**:  
    [**analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
 
@@ -72,7 +75,7 @@ ifood-case-cupons/
 
 ---
 
-## ⚙️ Parâmetros importantes (`config/settings.yaml`)
+## ⚙️ Configurações importantes (`config/settings.yaml`)
 
 | Caminho                         | Descrição |
 |--------------------------------|-----------|
@@ -88,22 +91,42 @@ ifood-case-cupons/
 
 ---
 
-## 🧱 Decisões técnicas & premissas (essenciais para explicar)
+## 🧱 Decisões técnicas & otimizações de desempenho
 
+### Formato e leitura dos dados
 - **Formato de `orders`**: detectado como **NDJSON**; leitura com `spark.read.json(...)`.  
   - Como o arquivo é grande e gzip não é splittable, a leitura inicial roda em 1 task; após ler, fazemos:  
     **`o = o.repartition(spark.sql.shuffle.partitions, 'customer_id')`** para **distribuir** o trabalho nos joins.
   - **Broadcast** de dimensões: `restaurants` sempre (pequena) e `abmap` se `count ≤ 2M`.
-- **Timezone**: criamos `event_ts_utc` (UTC canônico). Para análises diárias de negócio, usamos `event_date_brt` (UTC → BRT).  
-- **Evento**: se `order_scheduled==true` e há `order_scheduled_date`, o **evento** é a data agendada; caso contrário, a de criação.  
-- **PII**: `cpf` e telefone geram `*_hash`; campos sensíveis (nome/endereço) **removidos** nas “silver”.  
-- **Qualidade de dados**:  
-  - descartamos `order_id` ou `customer_id` **nulos**, `order_id` **duplicado**;  
-  - `order_total_amount` negativo vira **nulo**;  
-  - coordenadas de `merchant_*` fora do intervalo válido viram **nulo**.  
-- **Janela do experimento**: se não definida, inferimos `[min, max+1)` e reportamos no log (UTC).  
-- **Sem marcação A/B (`is_target` nulo)**: **excluímos** por padrão (evitar viés); pode ser mudado por config.  
-- **Persistência**: por padrão **não** salvamos Parquet no Colab (`SAVE_PARQUET=False`) — tudo roda **em memória**; habilitar apenas se necessário.
+
+### Configuração do Spark
+- **shuffle_partitions**: otimizado para **128** com base em benchmarks no Colab.  
+- **driver_memory**: ajustado para **12g** para evitar problemas de memória.
+
+### Persistência e formato de saída
+- **Persistência estratégica**: usamos `.cache()` para evitar recomputação em etapas subsequentes.  
+- **Parquet**: após o ETL, os DataFrames processados podem ser salvos em Parquet para acelerar leituras futuras.
+
+---
+
+## 🧰 O notebook como orquestrador técnico
+
+O notebook **pipeline_analise_completa.ipynb** funciona como um **orquestrador técnico** das tarefas de análise, integrando os diferentes módulos do repositório:
+
+1. **Configuração inicial**:
+   - Clona o repositório e instala as dependências.
+   - Faz o download programático dos dados brutos.
+
+2. **Configuração do Spark**:
+   - Lê as configurações do arquivo `settings.yaml` e inicializa o Spark com parâmetros ajustados para o Colab.
+
+3. **Execução das tarefas**:
+   - **Pré-flight**: validação dos arquivos brutos.
+   - **ETL**: utiliza funções do módulo `src/etl.py` para ingestão, conformação e geração dos DataFrames "silver".
+   - **Análises**: executa métricas de A/B, ROI e segmentação, utilizando funções específicas dos módulos `src/utils.py` e `src/checks.py`.
+
+4. **Orquestração**:
+   - O notebook organiza a execução das etapas de forma sequencial, garantindo que cada tarefa seja realizada com base nos resultados da anterior.
 
 ---
 
@@ -154,7 +177,7 @@ Esses passos mostram maturidade de engenharia e evitam “rodar com tabelas vazi
 ## 📌 Resumo para a apresentação
 
 - **Por que Colab-only?** Reprodutibilidade e simplicidade para os avaliadores.  
-- **Gargalo conhecido**: `orders` é grande e gzip não splittable → leitura 1 task; depois **repartition + broadcast**.  
+- **Gargalo conhecido**: `orders` é grande e gzip não é splittable → leitura 1 task; depois **repartition + broadcast**.  
 - **Qualidade**: pré-flight fail-fast + profiling guiando o ETL; timezone/PII/validações.  
 - **A/B → ROI → RFM** na ordem pedida, com **premissas explícitas** e **próximos passos**.
 
