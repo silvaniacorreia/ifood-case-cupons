@@ -4,6 +4,7 @@ import os
 import datetime as dt
 from pathlib import Path
 from typing import Tuple
+import gzip, json
 
 from pyspark.sql import DataFrame, functions as F
 from pyspark.sql.types import ArrayType
@@ -66,19 +67,44 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
             f"Nenhum CSV válido encontrado em {ab_dir}. "
             "Verifique se o .tar.gz foi extraído e se não há apenas arquivos '._*.csv'."
         )
+    
+    def read_orders_auto(spark, path: str):
+        """
+        Lê orders em JSON, detectando automaticamente:
+        - NDJSON (um JSON por linha)
+        - JSON array (arquivo único com [ {...}, {...} ])
+        Fallback seguro para datasets do case.
+        """
+        df_try = spark.read.json(path)
+        if df_try.count() > 5:
+            return df_try
+
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            first_non_ws = None
+            while True:
+                ch = f.read(1)
+                if not ch:
+                    break
+                if not ch.isspace():
+                    first_non_ws = ch
+                    break
+            f.seek(0)
+
+            if first_non_ws == "[":
+                data = json.load(f) 
+                return spark.createDataFrame(data)
+            else:
+                data = [json.loads(line) for line in f if line.strip()]
+                return spark.createDataFrame(data)
 
     abmap = (
         spark.read
             .option("header", True)
             .option("inferSchema", True)
-            .csv(csv_paths)   # <- lê todos os CSVs válidos
+            .csv(csv_paths)  
     )
 
-    orders = (
-        spark.read
-        .option("multiLine", True) 
-        .json(orders_path)
-    )
+    orders = read_orders_auto(spark, orders_path)
 
     consumers = (
         spark.read
