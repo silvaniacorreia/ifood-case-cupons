@@ -71,7 +71,7 @@ ifood-case-cupons/
 
 ---
 
-## 🔗 Acesso rápido aos Notebooks (abre em nova aba)
+## 🔗 Acesso rápido aos Notebooks (clique com botão direito e abra em nova aba)
 
 - **Setup & Checks**  
   <a href="https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb" target="_blank" rel="noopener">Abrir no Colab</a> ·
@@ -85,37 +85,7 @@ ifood-case-cupons/
 
 ---
 
-## ⚙️ Configuração & Execução
-
-### `config/settings.yaml` (exemplo mínimo)
-```yaml
-runtime:
-  seed: 42
-  spark:
-    app_name: "ifood-case-cupons"
-    shuffle_partitions: 64
-
-data:
-  raw_dir: "data/raw"
-  processed_dir: "data/processed"
-
-sources:
-  orders:      { url: "https://.../order.json.gz",      filename: "order.json.gz" }
-  consumers:   { url: "https://.../consumer.csv.gz",    filename: "consumer.csv.gz" }
-  restaurants: { url: "https://.../restaurant.csv.gz",  filename: "restaurant.csv.gz" }
-  ab_test_ref: { url: "https://.../ab_test_ref.tar.gz", filename: "ab_test_ref.tar.gz" }
-
-analysis:
-  # Se NÃO definir a janela, o ETL **infere automaticamente** [min_data, max_data+1d) em UTC
-  # experiment_window:
-  #   start: "YYYY-MM-DD"
-  #   end:   "YYYY-MM-DD"   # exclusivo
-  business_tz: "America/Sao_Paulo"
-  auto_infer_window: true
-  treat_is_target_null_as_control: false
-  winsorize: 0.02
-  use_cuped: true
-```
+## Execução
 
 ### Execução no **Colab** (avaliadores)
 1. Abra **cada notebook** pelos links acima (o Colab abre em nova aba).  
@@ -124,16 +94,22 @@ analysis:
 
 
 ### Execução **local** (desenvolvedores)
-Pré-requisitos: **Python 3.10+** e **JDK 11+** (Spark).
 
+#### Pré-requisitos
+- **Python 3.10+**
+- **JDK 11+** (Spark)
+- **(Windows)**: [winutils.exe](https://github.com/cdarlint/winutils) compatível com sua versão do Hadoop (veja abaixo)
+- **(Recomendado para Windows):** [WSL 2 (Ubuntu)](https://learn.microsoft.com/pt-br/windows/wsl/install)
+
+#### Ambiente local (Windows, macOS, Linux)
 ```bash
-# 1) Ambiente
+# 1) Ambiente virtual
 python -m venv .venv && . .venv/Scripts/activate  # Windows PowerShell
-# ou: source .venv/bin/activate                    # macOS/Linux
+# ou: source .venv/bin/activate                    # macOS/Linux/WSL
 pip install -r requirements.txt
 python -m ipykernel install --user --name ifood-case
 
-# 2) Download programático
+# 2) Download programático dos dados
 python scripts/download_data.py
 
 # 3) Jupyter
@@ -141,19 +117,81 @@ jupyter notebook  # ou jupyter lab
 # Abra 00_setup_and_checks.ipynb (Run all) e depois 01_etl_pyspark.ipynb (Run all)
 ```
 
-> **Windows (importante):** para **escrever Parquet** com Spark, configure o **winutils.exe** (Hadoop):
-> - Descubra a versão do Hadoop usada pelo Spark:
->   ```python
->   print("Spark:", spark.version)
->   hadoop_ver = spark.sparkContext._gateway.jvm.org.apache.hadoop.util.VersionInfo.getVersion()
->   print("Hadoop:", hadoop_ver)
->   ```
-> - Instale o `winutils.exe` da **mesma linha de versão** (por ex., `C:\hadoop\hadoop-3.3.4\bin\winutils.exe`) e exporte:
->   ```powershell
->   $env:HADOOP_HOME="C:\hadoop\hadoop-3.3.4"
->   $env:PATH="$env:HADOOP_HOMEin;$env:PATH"
->   ```
-> Reinicie o Jupyter após configurar.
+#### ⚠️ Observações importantes para Windows
+
+- Para **escrever Parquet** com Spark, é necessário configurar o **winutils.exe**:
+  1. Descubra a versão do Hadoop usada pelo Spark:
+     ```python
+     print("Spark:", spark.version)
+     hadoop_ver = spark.sparkContext._gateway.jvm.org.apache.hadoop.util.VersionInfo.getVersion()
+     print("Hadoop:", hadoop_ver)
+     ```
+  2. Baixe o `winutils.exe` da **mesma linha de versão** (ex: [winutils/hadoop-3.3.1](https://github.com/cdarlint/winutils/tree/master/hadoop-3.3.1)) e coloque em `C:\hadoop\hadoop-<versao>\bin\winutils.exe`.
+  3. Exporte as variáveis de ambiente antes de abrir o Jupyter:
+     ```powershell
+     $env:HADOOP_HOME="C:\hadoop\hadoop-3.3.4"
+     $env:PATH="$env:HADOOP_HOME\bin;$env:PATH"
+     ```
+  4. Reinicie o terminal/Jupyter após configurar.
+
+- **Problemas comuns no Windows**:
+  - Erros de permissão ou `UnsatisfiedLinkError` ao salvar Parquet são comuns. Se persistirem, **use WSL** (veja abaixo).
+
+---
+
+### Execução via **WSL (Windows Subsystem for Linux) – Recomendado para Windows**
+
+Rodar o projeto pelo WSL (Ubuntu) elimina problemas de compatibilidade do Spark/Hadoop no Windows.
+
+#### 1. Instale o WSL e Ubuntu
+No PowerShell (como administrador):
+```powershell
+wsl --install -d Ubuntu
+```
+Reinicie o computador se solicitado.
+
+#### 2. Abra o Ubuntu (WSL) e prepare o ambiente
+No Ubuntu (WSL):
+```bash
+# Instale dependências
+sudo apt update
+sudo apt install openjdk-11-jdk python3-pip python3-venv git
+
+# Navegue até a pasta do projeto (acessando arquivos do Windows)
+cd /mnt/c/Users/silva/OneDrive/Documentos/portfólio/ifood-case-cupons
+
+# OU (recomendado): copie o projeto para o Linux
+cp -r /mnt/c/Users/silva/OneDrive/Documentos/portfólio/ifood-case-cupons ~/
+cd ~/ifood-case-cupons
+
+# Crie e ative o ambiente virtual
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Baixe os dados
+python scripts/download_data.py
+
+# Rode o Jupyter
+jupyter notebook
+```
+Abra o link gerado no navegador do Windows.
+
+#### 3. (Opcional) Use o VS Code com WSL
+- Instale a extensão **Remote - WSL** no VS Code.
+- Abra o projeto pelo comando:  
+  `Remote-WSL: Open Folder in WSL`
+- O terminal, Python e Jupyter rodarão no Linux, mas você edita normalmente pelo VS Code no Windows.
+
+---
+
+**Resumo das recomendações:**
+- **Windows:** Prefira rodar pelo WSL para evitar problemas de Spark/Hadoop.
+- **Ambiente virtual:** Sempre crie o venv pelo próprio sistema (não misture venv do Windows com WSL).
+- **Permissões:** Se rodar em `/mnt/c/...`, pode haver problemas de permissão. O ideal é copiar o projeto para o Linux (`~/`).
+- **Jupyter:** O link do Jupyter rodando no WSL pode ser aberto normalmente no navegador do Windows.
 
 ---
 

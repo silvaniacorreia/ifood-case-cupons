@@ -9,7 +9,7 @@ matplotlib==3.8.4
 
 # Config & validação
 pyyaml==6.0.1       
-pydantic==2.7.1   
+pydantic==2.7.1
 
 # Dev & testes
 pytest==8.2.0       
@@ -19,7 +19,7 @@ jupyterlab==4.2.5
 ipykernel==6.29.5
 nbconvert==7.16.4
 pyppeteer==2.0.0   
-
+notebook==7.2.0
 
 # Requisições
 requests==2.32.3
