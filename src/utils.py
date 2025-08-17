@@ -1,5 +1,4 @@
 from __future__ import annotations
-import os
 import random
 from typing import Dict
 
@@ -10,8 +9,9 @@ from pyspark.sql import SparkSession
 
 # --------- Modelos de configuração ---------
 class SparkConfig(BaseModel):
-    app_name: str = "ifood-case"
+    app_name: str = "ifood-case-cupons"
     shuffle_partitions: int = 64
+    driver_memory: str = "8g"
 
 class RuntimeConfig(BaseModel):
     seed: int = 2025
@@ -49,46 +49,29 @@ class Settings(BaseModel):
     rfm: RFMConfig = RFMConfig()
     finance: FinanceConfig = FinanceConfig()
 
-
-# --------- Leitura de parâmetros ---------
 def load_settings(path: str = "config/settings.yaml") -> Settings:
-    """
-    Lê o YAML de configuração.
-    """
-    if not os.path.exists(path):
-        path = "config/settings.yaml"
     with open(path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    return Settings(**data)
+        raw = yaml.safe_load(f)
+    return Settings(**raw)
 
-
-# --------- Reprodutibilidade ---------
-def set_seeds(seed: int = 2025) -> None:
+def set_seeds(seed: int = 42):
     random.seed(seed)
-    try:
-        import numpy as np
-        np.random.seed(seed)
-    except Exception:
-        pass
+    np.random.seed(seed)
 
-
-# --------- Sessão Spark ---------
-def get_spark(app_name: str = "ifood-case", shuffle_partitions: int = 64) -> SparkSession:
-    """
-    Cria/retorna uma SparkSession.
-    """
+def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = "8g") -> SparkSession:
     builder = (
         SparkSession.builder
+        .master("local[*]")            
         .appName(app_name)
         .config("spark.sql.shuffle.partitions", str(shuffle_partitions))
-        .config("spark.driver.memory", "4g")
-        .config("spark.executor.memory", "4g")
+        .config("spark.sql.session.timeZone", "UTC")
+        .config("spark.ui.showConsoleProgress", "false")
+        .config("spark.driver.memory", driver_memory)
     )
-    builder = builder.master("local[*]")
-
     spark = builder.getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
     return spark
 
-def stop_spark(spark: SparkSession | None) -> None:
-    if spark is not None:
-        spark.stop()
+def stop_spark(spark: SparkSession):
+    spark.stop()
+

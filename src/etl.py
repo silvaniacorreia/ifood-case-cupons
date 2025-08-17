@@ -11,6 +11,8 @@ from pyspark.sql.types import ArrayType
 from pyspark.sql.types import ArrayType
 import datetime as dt
 
+from src.checks import preflight, sniff_orders_format, list_valid_ab_csvs
+
 def _parse_ts_any(colname: str) -> F.Column:
     """
     Função para parsear timestamps em diferentes formatos.
@@ -21,7 +23,7 @@ def _parse_ts_any(colname: str) -> F.Column:
         F.to_timestamp(c, "yyyy-MM-dd'T'HH:mm:ssX"),
         F.to_timestamp(c, "yyyy-MM-dd HH:mm:ss"),
         F.to_timestamp(c, "yyyy-MM-dd"),
-        F.to_timestamp(c)  # último recurso
+        F.to_timestamp(c)  
     )
 
 # ---------- Leitura dos insumos ----------
@@ -31,54 +33,25 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
     Lê os 4 insumos do case a partir de data/raw/.
     Retorna: (orders, consumers, restaurants, abmap)
     """
-    orders_path = os.path.join(raw_dir, "order.json.gz")
-    consumers_path = os.path.join(raw_dir, "consumer.csv.gz")
+    raw_dir = os.path.abspath(raw_dir)
+    # 0) pré-checagens (fail-fast)
+    rep = preflight(raw_dir, strict=True)
+    print("[ETL] preflight OK:", {
+        "orders_fmt": rep.get("orders_format_guess"),
+        "ab_csv_candidates": len(rep.get("ab_csv_candidates", []))
+    })
+
+    orders_path      = os.path.join(raw_dir, "order.json.gz")
+    consumers_path   = os.path.join(raw_dir, "consumer.csv.gz")
     restaurants_path = os.path.join(raw_dir, "restaurant.csv.gz")
-    ab_dir = os.path.join(raw_dir, "ab_test_ref_extracted")
+    ab_dir           = os.path.join(raw_dir, "ab_test_ref_extracted")
 
-    def list_valid_ab_csvs(dirpath: str) -> list[str]:
-        """
-        Retorna apenas CSVs 'válidos'.
-        """
-        all_csvs = list(Path(dirpath).rglob("*.csv"))
-        candidates = []
-        for p in all_csvs:
-            name = p.name
-            if name.startswith("._") or name.startswith("."):
-                continue  
-            try:
-                size = p.stat().st_size
-            except Exception:
-                size = 0
-            if size >= 1024:          
-                candidates.append(str(p))
-        print("[ETL] ab_test_ref_extracted CSVs encontrados:")
-        for p in all_csvs:
-            try:
-                print("  -", p.name, p.stat().st_size, "bytes")
-            except Exception:
-                print("  -", p.name, "(sem tamanho)")
-        print("[ETL] candidatos válidos:", [Path(c).name for c in candidates])
-        return candidates
-
-    csv_paths = list_valid_ab_csvs(ab_dir)
-    if not csv_paths:
-        raise FileNotFoundError(
-            f"Nenhum CSV válido encontrado em {ab_dir}. "
-            "Verifique se o .tar.gz foi extraído e se não há apenas arquivos '._*.csv'."
-        )
-    
-    def read_orders_auto(spark, path: str):
-        """
-        Lê orders em JSON, detectando automaticamente:
-        - NDJSON (um JSON por linha)
-        - JSON array (arquivo único com [ {...}, {...} ])
-        Fallback seguro para datasets do case.
-        """
-        df_try = spark.read.json(path)
+    # --- ORDERS: leitura robusta (NDJSON ou JSON array) ---
+    def read_orders_auto(path: str) -> DataFrame:
+        df_try = spark.read.json(path)    # NDJSON/objetos por linha (distribuída)
         if df_try.count() > 5:
             return df_try
-
+        # fallback: cheirar o arquivo
         with gzip.open(path, "rt", encoding="utf-8") as f:
             first_non_ws = None
             while True:
@@ -89,22 +62,14 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
                     first_non_ws = ch
                     break
             f.seek(0)
-
             if first_non_ws == "[":
-                data = json.load(f) 
+                data = json.load(f)  # JSON array (ok para tamanho do case)
                 return spark.createDataFrame(data)
             else:
                 data = [json.loads(line) for line in f if line.strip()]
                 return spark.createDataFrame(data)
 
-    abmap = (
-        spark.read
-            .option("header", True)
-            .option("inferSchema", True)
-            .csv(csv_paths)  
-    )
-
-    orders = read_orders_auto(spark, orders_path)
+    orders = read_orders_auto(orders_path)
 
     consumers = (
         spark.read
@@ -120,28 +85,22 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
         .csv(restaurants_path)
     )
 
-    ab_csv = None
-    for root, _, files in os.walk(ab_dir):
-        for f in files:
-            if f.lower().endswith(".csv"):
-                ab_csv = os.path.join(root, f)
-                break
-        if ab_csv:
-            break
-    if not ab_csv:
-        raise FileNotFoundError(f"CSV do ab_test_ref não encontrado em {ab_dir}")
-
+    # --- A/B: ler TODOS os CSVs válidos (ignora ._* e minúsculos) ---
+    csv_paths = [str(p) for p in list_valid_ab_csvs(Path(ab_dir))]
+    if not csv_paths:
+        raise FileNotFoundError(f"Nenhum CSV válido encontrado em {ab_dir}")
     abmap = (
         spark.read
         .option("header", True)
         .option("inferSchema", True)
-        .csv(ab_csv)
+        .csv(csv_paths)
     )
+
     return orders, consumers, restaurants, abmap
 
 # ---------- Conformizações por tabela ----------
 
-DEFAULT_TZ = "America/Sao_Paulo"  # para relatórios/datas de negócio
+DEFAULT_TZ = "America/Sao_Paulo"  
 
 def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFrame:
     cols = set(orders.columns)
@@ -176,7 +135,6 @@ def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFram
          .withColumn("event_date_brt", F.to_date(F.from_utc_timestamp(F.col("event_ts_utc"), business_tz)))
     )
 
-    # basket_size só se items existir e for array
     if "items" in cols and isinstance(orders.schema["items"].dataType, ArrayType):
         o = o.withColumn("basket_size", F.size("items"))
     else:
@@ -329,7 +287,6 @@ def clean_and_conform(
         df = df.filter(F.col("is_target").isNotNull())
         print("[ETL] drop is_target null ->", before, "→", df.count())
 
-    # janela
     start_str, end_str = experiment_start, experiment_end
     if auto_infer_window and not (start_str or end_str):
         mm = (o.agg(F.min("event_ts_utc").alias("min_ts"),
