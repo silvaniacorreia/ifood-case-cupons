@@ -14,11 +14,11 @@ data:
     ab_test_tar_gz: "ab_test_ref.tar.gz"
 
 analysis:
-  business_tz: "America/Sao_Paulo"    
+  use_cuped: true
+  winsorize: 0.02
+  business_tz: "America/Sao_Paulo"
   treat_is_target_null_as_control: false
-  experiment_window:
-    start: "2024-01-01"
-    end:   "2024-01-31"
+  auto_infer_window: true
 
 rfm:
   quantiles: [0.2, 0.4, 0.6, 0.8]  

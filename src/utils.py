@@ -30,7 +30,10 @@ class DataPaths(BaseModel):
 class AnalysisConfig(BaseModel):
     use_cuped: bool = True
     winsorize: float = 0.02
-
+    business_tz: str = "America/Sao_Paulo"
+    treat_is_target_null_as_control: bool = False
+    experiment_window: dict[str, str] | None = None
+    auto_infer_window: bool = True
 class RFMConfig(BaseModel):
     quantiles: list[float] = [0.2, 0.4, 0.6, 0.8]
 

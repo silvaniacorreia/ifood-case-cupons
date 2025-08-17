@@ -31,6 +31,15 @@ def extract_tar_gz(tar_path: Path, out_dir: Path) -> Path:
         tar.extractall(out_dir)
     return out_dir
 
+def remove_mac_artifacts(dirpath: Path) -> None:
+    for p in dirpath.rglob("*"):
+        if p.name.startswith("._") or p.name == ".DS_Store":
+            try:
+                p.unlink()
+                print(f"[clean] removido {p.name}")
+            except Exception:
+                pass
+
 def main():
     s = load_settings()
     raw_dir = Path(s["data"]["raw_dir"])
@@ -59,6 +68,7 @@ def main():
             else:
                 print(f"[extract] {filename} -> {out}")
                 extract_tar_gz(dest, out)
+                remove_mac_artifacts(out)
 
     print("Downloads finalizados. Para ler no ETL:")
     print(" - JSON/CSV .gz: Spark lê nativamente comprimidos (não precisa extrair).")
