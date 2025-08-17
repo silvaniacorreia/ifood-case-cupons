@@ -5,7 +5,7 @@ from typing import Dict
 import yaml
 from pydantic import BaseModel
 from pyspark.sql import SparkSession
-
+import numpy as np
 
 # --------- Modelos de configuração ---------
 class SparkConfig(BaseModel):
