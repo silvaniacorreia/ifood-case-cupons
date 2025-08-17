@@ -7,9 +7,9 @@ from typing import Tuple
 import gzip, json
 
 from pyspark.sql import DataFrame, functions as F
-from pyspark.sql.types import ArrayType
-from pyspark.sql.types import ArrayType
-import datetime as dt
+from pyspark.sql.types import ArrayType, MapType, StringType
+from pyspark.sql.functions import broadcast
+
 
 from src.checks import preflight, sniff_orders_format, list_valid_ab_csvs
 
@@ -129,14 +129,38 @@ def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFram
          .withColumn("scheduled_utc", F.to_utc_timestamp(F.col("order_scheduled_date"), tz_col))
          .withColumn(
              "event_ts_utc",
-             F.when((F.col("order_scheduled") == True) & F.col("scheduled_utc").isNotNull(),
-                    F.col("scheduled_utc")).otherwise(F.col("created_utc"))
+         F.when(
+             (F.col("order_scheduled") == True) &
+             F.col("scheduled_utc").isNotNull() &
+             (F.col("scheduled_utc") >= F.col("created_utc")),   
+             F.col("scheduled_utc")
+         ).otherwise(F.col("created_utc"))
          )
          .withColumn("event_date_brt", F.to_date(F.from_utc_timestamp(F.col("event_ts_utc"), business_tz)))
     )
 
-    if "items" in cols and isinstance(orders.schema["items"].dataType, ArrayType):
-        o = o.withColumn("basket_size", F.size("items"))
+    if "items" in cols:
+        o = (
+            o.withColumn(
+                "items_parsed",
+                F.when(
+                    F.col("items").cast("string").rlike(r"^\s*\["),
+                    F.from_json(
+                        F.col("items").cast("string"),
+                        ArrayType(MapType(StringType(), StringType()))
+                    )
+                )
+            )
+            .withColumn(
+                "basket_size",
+                F.when(
+                    F.col("items_parsed").isNotNull(), F.size("items_parsed")
+                ).when(
+                    F.schema["items"].dataType.jsonValue().get("type") == "array", F.size("items")
+                ).otherwise(F.lit(None).cast("int"))
+            )
+            .drop("items_parsed")
+        )
     else:
         o = o.withColumn("basket_size", F.lit(None).cast("int"))
 
@@ -213,13 +237,14 @@ def conform_restaurants(restaurants: DataFrame) -> DataFrame:
         .withColumn("minimum_order_value", F.when(F.col("minimum_order_value") >= 0, F.col("minimum_order_value")).otherwise(F.lit(None)))
     )
     r = (
-        r.withColumnRenamed("created_at", "merchant_created_at")
-         .select(
-             "merchant_id", "enabled", "price_range",
-             "average_ticket", "delivery_time", "minimum_order_value",
-             "merchant_zip_code", "merchant_city", "merchant_state", "merchant_country",
-             "merchant_created_at"
-         )
+    r.withColumn("merchant_zip_code", F.col("merchant_zip_code").cast("string"))
+     .withColumnRenamed("created_at", "merchant_created_at")
+     .select(
+         "merchant_id", "enabled", "price_range",
+         "average_ticket", "delivery_time", "minimum_order_value",
+         "merchant_zip_code", "merchant_city", "merchant_state", "merchant_country",
+         "merchant_created_at"
+     )
     )
     return r
 
@@ -277,8 +302,6 @@ def clean_and_conform(
     parts = int(o.sql_ctx.getConf("spark.sql.shuffle.partitions"))
     o = o.repartition(parts, "customer_id")
 
-    # (opcional) broadcast dims pequenas
-    from pyspark.sql.functions import broadcast
     r = broadcast(r)
     if a.count() <= 2_000_000:
         a = broadcast(a)

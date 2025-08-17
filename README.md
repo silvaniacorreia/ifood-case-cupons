@@ -1,26 +1,10 @@
-# iFood Case – Cupons
+# Case Ifood: Teste A/B Estratégia de Cupons
 
-Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um **teste A/B** de cupons com foco em **retenção** e crescimento, seguindo **exatamente** a ordem pedida no case (A/B → viabilidade financeira → segmentação → recomendações).
+Repositório do case para **Analista de Dados** no iFood. Objetivo: analisar um **teste A/B** de cupons com foco em **retenção** e crescimento.
 
 > Execução **100% no Google Colab** para máxima reprodutibilidade (sem dependências locais).
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb){:target="_blank" rel="noopener"}
-
----
-
-## 🔄 O que mudou desde a última versão
-
-- **Colab-only**: removida a necessidade de execução local (JDK/winutils etc.). O notebook faz **clone do repo**, **instala dependências** e **baixa dados** sozinho.
-- Novo **pré-flight fail-fast** (`src/checks.py`): valida existência/tamanho/integração (`.gz` e `.tar.gz`) e identifica **CSVs válidos** do A/B (ignora artefatos `._*.csv`, `.DS_Store`).
-- **Leitura robusta** de `orders` em `src/etl.py`:
-  - Detecção automática **NDJSON** (um JSON por linha) **vs** **JSON array**.
-  - Para NDJSON (nosso caso), usamos `spark.read.json(...)`.  
-- **Orders é muito grande** (~**1.6 GB** comprimido): gzip **não é splittable**, então a descompressão ocorre em **um único task**; após ler, **reparticionamos** o dataset conformado por `customer_id` (usando `spark.sql.shuffle.partitions`) para **paralelizar os joins**.  
-  - Também **broadcast** das dimensões pequenas: `restaurants` (sempre) e `abmap` (se couber).
-- **Profiling rápido** pós-leitura (`profile_loaded`): mostra **schema**, **amostras**, **faixa de datas**, **nulos** e **distribuição** do grupo do A/B — orienta as regras do ETL.
-- **Janela do experimento**: se não vier no `settings.yaml`, é **inferida automaticamente** como `[min(data), max(data)+1d)` em UTC e aplicada como filtro.
-- **PII**: `cpf`/telefone **hasheados**; campos de endereço/nome **removidos** das camadas analíticas.
-- **Camadas “silver” em memória**: salvar Parquet é **opcional** (desativado por padrão no Colab para reduzir I/O).
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
 
 ---
 
@@ -71,9 +55,9 @@ ifood-case-cupons/
 ## ▶️ Como executar
 
 1. Abra o notebook **no Colab**:  
-   [**analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb){:target="_blank" rel="noopener"}
+   [**analise_completa.ipynb**](https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/analise_completa.ipynb)
 
-2. Menu **Runtime → Run all**. A primeira célula:
+2. Menu **Ambiente de Execução → Executar Tudo**. A primeira célula:
    - clona/atualiza o repositório;  
    - instala as dependências do `requirements.txt`;  
    - roda o **download programático** (`scripts/download_data.py`).
@@ -95,9 +79,9 @@ ifood-case-cupons/
 | `data.raw_dir`                 | Pasta dos brutos (default: `data/raw`) |
 | `data.processed_dir`           | Pasta dos parquet (se habilitar salvar) |
 | `runtime.spark.shuffle_partitions` | Nº de partições p/ shuffles/joins (usado no `repartition`) |
-| `runtime.spark.driver_memory`  | Memória do driver no Colab (ex.: `8g`/`12g`) |
+| `runtime.spark.driver_memory`  | Memória do driver no Colab (`12g`) |
 | `analysis.business_tz`         | TZ de negócio (default `America/Sao_Paulo`) |
-| `analysis.experiment_window`   | `{start: 'YYYY-MM-DD', end: 'YYYY-MM-DD'}`; se ausente, **auto-inferida** |
+| `analysis.experiment_window`   | **auto-inferida** |
 | `analysis.auto_infer_window`   | `true`/`false` — ativa a inferência de janela |
 | `analysis.treat_is_target_null_as_control` | `false` por padrão (linhas sem grupo são excluídas) |
 | `analysis.winsorize`/`use_cuped` | Parâmetros para A/B (aplicados nas análises) |
