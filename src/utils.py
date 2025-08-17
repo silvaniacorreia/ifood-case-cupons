@@ -1,6 +1,7 @@
 from __future__ import annotations
 import random
 from typing import Dict
+import time
 
 import yaml
 from pydantic import BaseModel
@@ -61,7 +62,7 @@ def set_seeds(seed: int = 42):
 def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = "12g") -> SparkSession:
     builder = (
         SparkSession.builder
-        .master("local[*]")            
+        .master("local[*]")
         .appName(app_name)
         .config("spark.sql.shuffle.partitions", str(shuffle_partitions))
         .config("spark.sql.session.timeZone", "UTC")
@@ -74,4 +75,17 @@ def get_spark(app_name: str, shuffle_partitions: int = 64, driver_memory: str = 
 
 def stop_spark(spark: SparkSession):
     spark.stop()
+
+def benchmark_shuffle(spark: SparkSession, df, shuffle_partitions_list: list[int]) -> dict[int, float]:
+    results = {}
+    for partitions in shuffle_partitions_list:
+        spark.conf.set("spark.sql.shuffle.partitions", partitions)
+        print(f"Testing shuffle_partitions={partitions}...")
+        start_time = time.time()
+        # Exemplo de operação de shuffle (groupBy + count)
+        df.groupBy("customer_id").count().collect()
+        elapsed_time = time.time() - start_time
+        results[partitions] = elapsed_time
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
+    return results
 

@@ -3,6 +3,7 @@ runtime:
   spark:
     app_name: "ifood-case"
     shuffle_partitions: 64   
+    driver_memory: "12g"
 
 data:
   raw_dir: "data/raw"
