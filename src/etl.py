@@ -35,6 +35,45 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
     restaurants_path = os.path.join(raw_dir, "restaurant.csv.gz")
     ab_dir = os.path.join(raw_dir, "ab_test_ref_extracted")
 
+    def list_valid_ab_csvs(dirpath: str) -> list[str]:
+        """
+        Retorna apenas CSVs 'válidos'.
+        """
+        all_csvs = list(Path(dirpath).rglob("*.csv"))
+        candidates = []
+        for p in all_csvs:
+            name = p.name
+            if name.startswith("._") or name.startswith("."):
+                continue  
+            try:
+                size = p.stat().st_size
+            except Exception:
+                size = 0
+            if size >= 1024:          
+                candidates.append(str(p))
+        print("[ETL] ab_test_ref_extracted CSVs encontrados:")
+        for p in all_csvs:
+            try:
+                print("  -", p.name, p.stat().st_size, "bytes")
+            except Exception:
+                print("  -", p.name, "(sem tamanho)")
+        print("[ETL] candidatos válidos:", [Path(c).name for c in candidates])
+        return candidates
+
+    csv_paths = list_valid_ab_csvs(ab_dir)
+    if not csv_paths:
+        raise FileNotFoundError(
+            f"Nenhum CSV válido encontrado em {ab_dir}. "
+            "Verifique se o .tar.gz foi extraído e se não há apenas arquivos '._*.csv'."
+        )
+
+    abmap = (
+        spark.read
+            .option("header", True)
+            .option("inferSchema", True)
+            .csv(csv_paths)   # <- lê todos os CSVs válidos
+    )
+
     orders = (
         spark.read
         .option("multiLine", True) 
