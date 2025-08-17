@@ -31,11 +31,7 @@ ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
 ├─ notebooks/
-│  ├─ 00_setup_and_checks.ipynb      # bootstrap + download programático + smoke Spark
-│  ├─ 01_etl_pyspark.ipynb           # ETL e silvers (orders/users)
-│  ├─ 02_abtest_core.ipynb           # (em construção) A/B métricas + significância
-│  ├─ 03_financial_viability.ipynb   # (em construção) ROI e sensibilidade
-│  └─ 04_segments_ab_by_segment.ipynb# (em construção) RFM + leitura do A/B por segmento
+│  ├─ pipeline_analise_completa.ipynb  # notebook principal (orquestração da análise)
 ├─ src/
 │  ├─ __init__.py
 │  ├─ utils.py                       # settings + spark + seeds
@@ -43,7 +39,6 @@ ifood-case-cupons/
 ├─ scripts/
 │  └─ download_data.py               # baixa .gz/.tar.gz; extrai tar e limpa artefatos
 ├─ config/
-│  ├─ settings.example.yaml
 │  └─ settings.yaml                  # fontes + parâmetros (ver abaixo)
 ├─ data/
 │  ├─ raw/                           # arquivos baixados
