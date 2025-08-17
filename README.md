@@ -1,121 +1,135 @@
 # iFood Case – Cupons
 
-Case para vaga de Analista de Dados no iFood, com o objetivo de analisar um **teste A/B** de uma estratégia de **cupons** com foco em **retenção** e crescimento.
+Repositório para o case de **Analista de Dados** do iFood. Objetivo: analisar um **teste A/B** de uma estratégia de **cupons** com foco em **retenção** e crescimento, seguindo a ordem e escopo pedidos no case.
 
-**O case solicita que a entrega contemple, na ordem, os itens abaixo:**
+---
+
+## ✨ Escopo do Case (ordem de entrega)
 
 1) **Teste A/B (Campanha de Cupons)**
-   - **(a)** Definir **indicadores/métricas de sucesso** da campanha e analisar se houve **impacto estatisticamente significativo** no período avaliado.
-   - **(b)** Realizar **análise de viabilidade financeira** (ex.: ROI / payback), **explicitando as premissas** adotadas.
-   - **(c)** Recomendar **oportunidades de melhoria** na ação e **desenhar um novo teste A/B** para validar as hipóteses (desenho experimental, métricas e guardrails).
+   - **(a)** Definir **métricas de sucesso** e analisar **impacto estatisticamente significativo** no período avaliado.
+   - **(b)** Realizar **análise de viabilidade financeira** (ex.: ROI / payback), deixando **premissas explícitas**.
+   - **(c)** Recomendar **oportunidades de melhoria** e **desenhar um novo A/B** (desenho experimental, métricas e guardrails).
 
 2) **Segmentação de Usuários**
-   - **(a)** Estabelecer **critérios/ regras** para cada **segmento** (ex.: RFM), **explicando o racional** da construção.
-   - **(b)** Analisar os **resultados do A/B por segmento** e **propor ações específicas** para cada público.
+   - **(a)** Estabelecer **critérios/regras** dos segmentos (neste projeto: **RFM** como baseline), explicando o racional.
+   - **(b)** Analisar **resultados do A/B por segmento** e **propor ações** específicas.
 
 3) **Recomendações e Próximos Passos**
-   - Sugerir **próximos passos** com **previsão de impacto** (financeiro ou não), defendendo as recomendações para as **lideranças de Negócio**.
-   - Incluir **melhorias de processo/teste** e **estratégias diferenciadas por segmento**.  
-   - Quando necessário, **adotar premissas** e **deixá-las claras** no material.
-
-<a href="https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb" target="_blank" rel="noopener">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab">
-</a>
-
-> **O que este repositório entrega agora:** bootstrap reprodutível (local e Colab), **download programático** + extração, inicialização do **PySpark** e **smoke test**. As etapas de ETL, RFM, A/B e ROI estão sendo adicionadas na sequência.
-
-> **Como executar (avaliadores):** abra e rode **um notebook por vez na ordem** → `00_setup_and_checks` → `01_etl_pyspark` → `02_abtest_and_segments` → `03_financial_roi`.
+   - Plano com **previsão de impacto** (financeiro ou não) para as **Lideranças de Negócio**.
+   - **Melhorias de processo/teste** e **estratégias por segmento**.
+   - **Premissas documentadas** quando necessário.
 
 ---
 
-## ✅ Status (parcial)
+## 🚀 Status (até agora)
 
-- **Download programático** e extração (`scripts/download_data.py`) lendo as fontes de `config/settings.yaml`.
-- **Bootstrap Colab/Local** em `notebooks/00_setup_and_checks.ipynb`:
-  - Colab: clona o repositório, instala dependências, baixa e prepara os dados.
-  - Local: verifica paths e roda o mesmo script de download.
-- **Utilitários** (`src/utils.py`): `load_settings`, `get_spark`, `set_seeds`, `stop_spark`.
-- **Smoke test** do Spark no `00_setup_and_checks.ipynb`.
+- **Bootstrap reprodutível** (local e Colab) no `00_setup_and_checks.ipynb`:
+  - Colab: clona o repo, instala deps, baixa e prepara os dados (**download programático**).
+  - Local: garante paths e roda o mesmo script de download.
+- **Download programático** + extração: `scripts/download_data.py`
+  - Baixa os 4 insumos de `config/settings.yaml`.
+  - **Extrai** apenas o `ab_test_ref.tar.gz` (o Spark lê `.gz` diretamente).
+  - **Ignora artefatos** do macOS `._*.csv` e `.DS_Store` ao localizar o CSV do A/B.
+- **ETL base** (`01_etl_pyspark.ipynb` + `src/etl.py`):
+  - **Orders**: tipagem, normalização de **timezone** (UTC canônico; BRT para “dia de negócio”), remoção/hasheamento de **PII**, validações (duplicados, valores, geolocalização), escolha do **timestamp do evento** (agendado vs criado).
+  - **Consumers / Restaurants**: tipagem, normalização, remoção/hasheamento de PII e renomeações para joins seguros.
+  - **Janela do experimento**: parametrizada via `settings.yaml` **ou** **inferida automaticamente** dos dados quando não definida.
+  - Saídas: `data/processed/orders_silver.parquet` (fato por pedido) e `data/processed/users_silver.parquet` (R/F/M por usuário).
+- **Checks de qualidade** no final do notebook (nulos, unicidade, janelas, split A/B, distribuições).
 
-> Em construção: `src/etl.py`, `src/segments.py` (RFM), `src/abtest.py`, `src/finance.py` + notebooks `01_`, `02_`, `03_`.
+> Próximas etapas (em construção): `02_abtest_core.ipynb` (métricas + testes), `03_financial_viability.ipynb` (ROI) e `04_segments_ab_by_segment.ipynb` (RFM + A/B por segmento).
 
 ---
 
-## 🧩 Estrutura do repositório
+## 📁 Estrutura do repositório
 
-```markdown
+```
 ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
-├─ Makefile
 ├─ notebooks/
-│  ├─ 00_setup_and_checks.ipynb      # bootstrap + download programático + smoke do Spark
-│  ├─ 01_etl_pyspark.ipynb           # (em construção)
-│  ├─ 02_abtest_and_segments.ipynb   # (em construção)
-│  └─ 03_financial_roi.ipynb         # (em construção)
+│  ├─ 00_setup_and_checks.ipynb      # bootstrap + download programático + smoke Spark
+│  ├─ 01_etl_pyspark.ipynb           # ETL e silvers (orders/users)
+│  ├─ 02_abtest_core.ipynb           # (em construção) A/B métricas + significância
+│  ├─ 03_financial_viability.ipynb   # (em construção) ROI e sensibilidade
+│  └─ 04_segments_ab_by_segment.ipynb# (em construção) RFM + leitura do A/B por segmento
 ├─ src/
 │  ├─ __init__.py
-│  └─ utils.py                       # settings + spark + seeds
+│  ├─ utils.py                       # settings + spark + seeds
+│  └─ etl.py                         # ingestão + limpeza + joins + silvers
 ├─ scripts/
-│  └─ download_data.py               # baixa .gz/.tar.gz e extrai o .tar.gz
+│  └─ download_data.py               # baixa .gz/.tar.gz; extrai tar e limpa artefatos
 ├─ config/
 │  ├─ settings.example.yaml
-│  └─ settings.yaml                  # contém o bloco `sources:` com as URLs
+│  └─ settings.yaml                  # fontes + parâmetros (ver abaixo)
 ├─ data/
-│  ├─ raw/                           # arquivos baixados (spark lê .gz direto)
-│  └─ processed/                     # saídas intermediárias (parquet)
-└─ report/
+│  ├─ raw/                           # arquivos baixados
+│  └─ processed/                     # parquet gerados pelo ETL
+└─ report/                           # relatório final (PDF)
 ```
 
-## ⚙️ Configuração
+---
 
-Arquivo: `config/settings.yaml`
+## 🔗 Acesso rápido aos Notebooks (abre em nova aba)
 
-Parâmetros do projeto (seed, spark, caminhos) e bloco `sources` com as URLs e nomes dos 4 arquivos do case:
+- **Setup & Checks**  
+  <a href="https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb" target="_blank" rel="noopener">Abrir no Colab</a> ·
+  <a href="https://github.com/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/00_setup_and_checks.ipynb" target="_blank" rel="noopener">Ver no GitHub</a>
 
+- **ETL (PySpark)**  
+  <a href="https://colab.research.google.com/github/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/01_etl_pyspark.ipynb" target="_blank" rel="noopener">Abrir no Colab</a> ·
+  <a href="https://github.com/silvaniacorreia/ifood-case-cupons/blob/main/notebooks/01_etl_pyspark.ipynb" target="_blank" rel="noopener">Ver no GitHub</a>
+
+*(Os notebooks 02/03/04 aparecerão aqui quando forem versionados.)*
+
+---
+
+## ⚙️ Configuração & Execução
+
+### `config/settings.yaml` (exemplo mínimo)
 ```yaml
+runtime:
+  seed: 42
+  spark:
+    app_name: "ifood-case-cupons"
+    shuffle_partitions: 64
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+
 sources:
-  orders:      { url: ".../order.json.gz",      filename: "order.json.gz" }
-  consumers:   { url: ".../consumer.csv.gz",    filename: "consumer.csv.gz" }
-  restaurants: { url: ".../restaurant.csv.gz",  filename: "restaurant.csv.gz" }
-  ab_test_ref: { url: ".../ab_test_ref.tar.gz", filename: "ab_test_ref.tar.gz" }
+  orders:      { url: "https://.../order.json.gz",      filename: "order.json.gz" }
+  consumers:   { url: "https://.../consumer.csv.gz",    filename: "consumer.csv.gz" }
+  restaurants: { url: "https://.../restaurant.csv.gz",  filename: "restaurant.csv.gz" }
+  ab_test_ref: { url: "https://.../ab_test_ref.tar.gz", filename: "ab_test_ref.tar.gz" }
+
+analysis:
+  # Se NÃO definir a janela, o ETL **infere automaticamente** [min_data, max_data+1d) em UTC
+  # experiment_window:
+  #   start: "YYYY-MM-DD"
+  #   end:   "YYYY-MM-DD"   # exclusivo
+  business_tz: "America/Sao_Paulo"
+  auto_infer_window: true
+  treat_is_target_null_as_control: false
+  winsorize: 0.02
+  use_cuped: true
 ```
 
-O `scripts/download_data.py` lê essas entradas, baixa os arquivos para `data/raw/` e extrai o `ab_test_ref.tar.gz` para `data/raw/ab_test_ref_extracted/`. Os `.gz` (JSON/CSV) não precisam ser descompactados para o Spark.
+### Execução no **Colab** (avaliadores)
+1. Abra **cada notebook** pelos links acima (o Colab abre em nova aba).  
+2. Em `00_setup_and_checks`: **Runtime → Run all**. A primeira célula clona o repo, instala deps e roda o **download programático**; a segunda faz o **smoke** do Spark.  
+3. Em `01_etl_pyspark`: **Run all** para gerar `orders_silver.parquet` e `users_silver.parquet` em `data/processed/`.
 
----
 
-## ▶️ Como executar no Colab (avaliadores)
-
-Clique no badge acima (“Open in Colab”).
-
-No Colab, vá em `Runtime → Run all (Executar tudo)`.
-
-A primeira célula:
-- clona este repositório para `/content/ifood-case-cupons`,
-- instala dependências do `requirements.txt`,
-- roda `scripts/download_data.py` (download programático + extração).
-
-A segunda célula faz o smoke test do Spark (deve imprimir “Spark OK: x.y.z” e exibir uma tabela 0..4).
-
-Após isso, os dados estarão em:
-
-```
-/content/ifood-case-cupons/data/raw/
-/content/ifood-case-cupons/data/raw/ab_test_ref_extracted/
-```
-
-Quando os notebooks seguintes forem concluídos, basta abrir `01_`, `02_` e `03_` e executar normalmente.
-
----
-
-## 💻 Como executar localmente (desenvolvedores)
-
-Pré-requisitos: Python 3.10+, JDK 11+ (para Spark).
+### Execução **local** (desenvolvedores)
+Pré-requisitos: **Python 3.10+** e **JDK 11+** (Spark).
 
 ```bash
 # 1) Ambiente
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+python -m venv .venv && . .venv/Scripts/activate  # Windows PowerShell
+# ou: source .venv/bin/activate                    # macOS/Linux
 pip install -r requirements.txt
 python -m ipykernel install --user --name ifood-case
 
@@ -123,34 +137,59 @@ python -m ipykernel install --user --name ifood-case
 python scripts/download_data.py
 
 # 3) Jupyter
-jupyter notebook   # ou jupyter lab
-# Abra notebooks/00_setup_and_checks.ipynb e rode "Run all"
+jupyter notebook  # ou jupyter lab
+# Abra 00_setup_and_checks.ipynb (Run all) e depois 01_etl_pyspark.ipynb (Run all)
 ```
 
-Se aparecer erro de Java local, instale um JDK 11+ e confira `java -version` no terminal.
+> **Windows (importante):** para **escrever Parquet** com Spark, configure o **winutils.exe** (Hadoop):
+> - Descubra a versão do Hadoop usada pelo Spark:
+>   ```python
+>   print("Spark:", spark.version)
+>   hadoop_ver = spark.sparkContext._gateway.jvm.org.apache.hadoop.util.VersionInfo.getVersion()
+>   print("Hadoop:", hadoop_ver)
+>   ```
+> - Instale o `winutils.exe` da **mesma linha de versão** (por ex., `C:\hadoop\hadoop-3.3.4\bin\winutils.exe`) e exporte:
+>   ```powershell
+>   $env:HADOOP_HOME="C:\hadoop\hadoop-3.3.4"
+>   $env:PATH="$env:HADOOP_HOMEin;$env:PATH"
+>   ```
+> Reinicie o Jupyter após configurar.
 
 ---
 
-## 🧪 Teste rápido (smoke do Spark)
+## 🧱 Premissas & Decisões de Projeto
 
-No `notebooks/00_setup_and_checks.ipynb` já existe uma célula que faz:
-
-```python
-from src.utils import load_settings, set_seeds, get_spark, stop_spark
-s = load_settings()
-set_seeds(s.runtime.seed)
-spark = get_spark(app_name=s.runtime.spark.app_name,
-                  shuffle_partitions=s.runtime.spark.shuffle_partitions)
-print("Spark OK:", spark.version)
-spark.range(5).show()
-stop_spark(spark)
-```
+- **Timezone**: timestamps normalizados para **UTC** (`event_ts_utc`); para relatórios diários, usamos **BRT** (`event_date_brt`).  
+- **Evento do pedido**: se `order_scheduled==true` **e** `order_scheduled_date` existir, usamos a data agendada; caso contrário, a data de criação do pedido.  
+- **Janela do experimento**: se `analysis.experiment_window` estiver **ausente**, o ETL **infere** automaticamente `[min(data), max(data)+1d)` em UTC e aplica o filtro.  
+- **A/B sem marcação**: `treat_is_target_null_as_control=false` por padrão (linhas sem `is_target` são excluídas, para evitar viés).  
+- **PII**: `cpf` e telefone são **hasheados**; nome e endereço são **removidos** nas camadas analíticas.  
+- **Leitura do A/B (CSV dentro de tar.gz)**: ignoramos arquivos “fantasma” do macOS (`._*.csv`, `.DS_Store`) e escolhemos o **maior CSV válido**.  
+- **Outliers**: estatísticas de cauda são inspecionadas no ETL; a decisão de **winsorizar** (ex.: 1–99%) será aplicada no notebook do A/B.  
+- **Reprodutibilidade**: o **download é programático** e o pipeline é executável **no Colab** sem setup manual.
 
 ---
 
-## 🔜 Roadmap (próximas entregas)
+## 🧪 Checks rápidos no ETL (no final do `01_etl_pyspark`)
 
-- `src/etl.py` + `notebooks/01_etl_pyspark.ipynb`
-- `src/segments.py` (RFM) + `notebooks/02_abtest_and_segments.ipynb`
-- `src/abtest.py` (A/B com CUPED) + `src/finance.py` (ROI) + `notebooks/03_financial_roi.ipynb`
+- Unicidade: `order_id` e `customer_id` distintos nas silvers.  
+- Nulos por coluna (especial atenção a `event_ts_utc`, `order_total_amount`, `is_target`).  
+- Faixa de datas (UTC) e contagem diária (BRT) por grupo (`is_target`).  
+- Split do A/B (equilíbrio entre controle e tratamento).  
+- Resumo/quantis de `order_total_amount` e inspeção de outliers.
 
+---
+
+## 🗺️ Roadmap (próximas entregas)
+
+- `02_abtest_core.ipynb`: métricas por usuário (GMV/U, Pedidos/U, Conversão, AOV), **Welch t-test** e **z-test de proporções**; (opcional) **CUPED**.
+- `03_financial_viability.ipynb`: **ROI** e análise de **sensibilidade** (take rate, custo do cupom, cobertura).
+- `04_segments_ab_by_segment.ipynb`: **RFM** + leitura do **uplift por segmento** e recomendações direcionadas.
+
+---
+
+## 📄 Licença & Privacidade
+
+- Dados **não são versionados**. O script `scripts/download_data.py` baixa os insumos a partir das URLs configuradas.  
+- PII é protegida nas **camadas analíticas** (hash/removidos).  
+- Repositório preparado para execução em **ambiente gerenciado** (Colab) e **local** (com as observações de Windows acima).
