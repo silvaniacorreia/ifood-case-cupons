@@ -401,6 +401,72 @@ def build_orders_silver(df: DataFrame) -> DataFrame:
     keep = [c for c in cols if c in df.columns]
     return df.select(*keep)
 
+def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
+    """
+    Cria colunas derivadas para facilitar a análise, sem alterar as originais:
+      - origin_platform_clean  : preenche nulos com 'unknown'
+      - language_clean / active_clean : categorias para cortes sem perder linhas
+      - minimum_order_value_imputed / delivery_time_imputed : imputação por mediana
+        (1) por (merchant_city, price_range) e fallback (2) por price_range
+
+    OBS: as colunas originais permanecem intactas para auditoria.
+    """
+    from pyspark.sql import functions as F
+
+    base = (
+        df_orders_silver
+        .withColumn(
+            "origin_platform_clean",
+            F.coalesce(F.col("origin_platform").cast("string"), F.lit("unknown"))
+        )
+        .withColumn(
+            "language_clean",
+            F.coalesce(F.lower(F.col("language").cast("string")), F.lit("unknown"))
+        )
+        .withColumn(
+            "active_clean",
+            F.when(F.col("active").isNull(), F.lit("unknown"))
+             .when(F.col("active") == True, F.lit("true"))
+             .otherwise(F.lit("false"))
+        )
+    )
+
+    # ---- MOV (minimum_order_value) imputado ----
+    mov_city_range = (
+        base.groupBy("merchant_city", "price_range")
+            .agg(F.expr("percentile_approx(minimum_order_value, 0.5)").alias("mov_med_city_range"))
+    )
+    mov_range = (
+        base.groupBy("price_range")
+            .agg(F.expr("percentile_approx(minimum_order_value, 0.5)").alias("mov_med_range"))
+    )
+    base = (
+        base
+        .join(mov_city_range, ["merchant_city", "price_range"], "left")
+        .join(mov_range, ["price_range"], "left")
+        .withColumn(
+            "minimum_order_value_imputed",
+            F.coalesce("minimum_order_value", "mov_med_city_range", "mov_med_range")
+        )
+        .drop("mov_med_city_range", "mov_med_range")
+    )
+
+    # ---- delivery_time imputado (mediana por price_range) ----
+    deliv_range = (
+        base.groupBy("price_range")
+            .agg(F.expr("percentile_approx(delivery_time, 0.5)").alias("del_med_range"))
+    )
+    base = (
+        base
+        .join(deliv_range, ["price_range"], "left")
+        .withColumn(
+            "delivery_time_imputed",
+            F.coalesce("delivery_time", "del_med_range")
+        )
+        .drop("del_med_range")
+    )
+
+    return base
 
 def build_user_aggregates(df_orders_silver: DataFrame) -> DataFrame:
     """
