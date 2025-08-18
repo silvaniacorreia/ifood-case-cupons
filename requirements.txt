@@ -3,6 +3,7 @@ pyspark==3.5.1
 pandas==2.2.2
 numpy==1.26.4
 scipy==1.13.1
+pyarrow==14.0.2
 
 # Visualização
 matplotlib==3.8.4   
