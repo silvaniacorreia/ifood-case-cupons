@@ -15,6 +15,15 @@ def _exists_and_size(p: Path) -> tuple[bool, int]:
     return p.exists(), (p.stat().st_size if p.exists() else 0)
 
 def validate_gzip(p: Path) -> bool:
+    """
+    Valida a integridade de um arquivo gzip.
+
+    Parâmetros:
+        p (Path): Caminho para o arquivo gzip.
+
+    Retorna:
+        bool: True se o arquivo for válido, False caso contrário.
+    """
     try:
         with gzip.open(p, "rb") as g:
             g.peek(1)
@@ -75,8 +84,14 @@ def sniff_orders_format(orders_gz: Path) -> str:
 
 def preflight(raw_dir: str | Path, strict: bool = True) -> Dict[str, Any]:
     """
-    Executa checagens de presença/tamanho/integração dos arquivos.
-    strict=True levanta RuntimeError em problemas críticos.
+    Executa checagens de presença, tamanho e integridade dos arquivos necessários.
+
+    Parâmetros:
+        raw_dir (str | Path): Caminho para o diretório contendo os arquivos brutos.
+        strict (bool): Se True, levanta erros críticos em caso de problemas.
+
+    Retorna:
+        Dict[str, Any]: Relatório detalhado das checagens realizadas.
     """
     raw = Path(raw_dir)
     report: Dict[str, Any] = {"raw_dir": str(raw), "files": {}, "ab_csv_candidates": []}
@@ -125,52 +140,57 @@ def preflight(raw_dir: str | Path, strict: bool = True) -> Dict[str, Any]:
 
     return report
 
-def profile_loaded(orders, consumers, restaurants, abmap, n: int = 5):
-    """Resumo rápido dos 4 DataFrames já carregados (orienta o ETL)."""
+def profile_loaded(orders, consumers, restaurants, abmap, n: int = 5, light: bool = True):
+    """Resumo rápido dos 4 DataFrames já carregados.
+       light=True evita operações pesadas (count/agg/shuffle)."""
 
     def _nulls(df):
-        exprs = [F.sum(F.col(c).isNull().cast("int")).alias(c) for c in df.columns]
-        return df.select(exprs)
+        # versão leve: apenas esquema das colunas-chave
+        return None  # desabilitado no modo leve
 
     print("\n=== PROFILE: ORDERS ===")
-    print("rows:", orders.count())
-    orders.printSchema()
+    if not light:
+        print("rows:", orders.count())
+        orders.printSchema()
+    else:
+        orders.printSchema()
     try:
-        orders.select("order_id","customer_id","merchant_id","order_total_amount","order_created_at").show(n, truncate=False)
+        orders.select("order_id","customer_id","merchant_id","order_total_amount","order_created_at").limit(n).show(n, truncate=False)
     except Exception:
-        orders.show(n, truncate=False)
-    # faixa de datas (tentando colunas mais comuns)
-    for ts in ["order_created_at","event_ts_utc"]:
-        if ts in orders.columns:
-            orders.agg(F.min(ts).alias("min_"+ts), F.max(ts).alias("max_"+ts)).show()
-    # nulos em campos-chave
-    keys = [c for c in ["order_id","customer_id","merchant_id","order_total_amount"] if c in orders.columns]
-    if keys:
-        _nulls(orders.select(*keys)).show(truncate=False)
+        orders.limit(n).show(n, truncate=False)
+
+    if not light:
+        for ts in ["order_created_at","event_ts_utc"]:
+            if ts in orders.columns:
+                orders.agg(F.min(ts).alias("min_"+ts), F.max(ts).alias("max_"+ts)).show()
 
     print("\n=== PROFILE: CONSUMERS ===")
-    print("rows:", consumers.count())
-    consumers.printSchema()
-    consumers.show(n, truncate=False)
-    keys = [c for c in ["customer_id","active","language","created_at","consumer_created_at"] if c in consumers.columns]
-    if keys:
-        _nulls(consumers.select(*keys)).show(truncate=False)
+    if not light:
+        print("rows:", consumers.count())
+        consumers.printSchema()
+        consumers.limit(n).show(n, truncate=False)
+    else:
+        consumers.printSchema()
+        consumers.limit(n).show(n, truncate=False)
 
     print("\n=== PROFILE: RESTAURANTS ===")
-    print("rows:", restaurants.count())
-    restaurants.printSchema()
-    restaurants.show(n, truncate=False)
-    keys = [c for c in ["merchant_id","enabled","price_range","average_ticket","delivery_time"] if c in restaurants.columns]
-    if keys:
-        _nulls(restaurants.select(*keys)).show(truncate=False)
+    if not light:
+        print("rows:", restaurants.count())
+        restaurants.printSchema()
+        restaurants.limit(n).show(n, truncate=False)
+    else:
+        restaurants.printSchema()
+        restaurants.limit(n).show(n, truncate=False)
 
     print("\n=== PROFILE: ABMAP ===")
-    print("rows:", abmap.count())
-    abmap.printSchema()
-    abmap.show(n, truncate=False)
-    # distribuição do grupo
-    for g in ["is_target","target","treatment","group","ab_group","variant","bucket"]:
-        if g in abmap.columns:
-            abmap.groupBy(g).count().show()
-            break
-
+    if not light:
+        print("rows:", abmap.count())
+        abmap.printSchema()
+        abmap.limit(n).show(n, truncate=False)
+        for g in ["is_target","target","treatment","group","ab_group","variant","bucket"]:
+            if g in abmap.columns:
+                abmap.groupBy(g).count().show()
+                break
+    else:
+        abmap.printSchema()
+        abmap.limit(n).show(n, truncate=False)
