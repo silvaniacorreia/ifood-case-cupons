@@ -50,17 +50,41 @@ ifood-case-cupons/
 
 ## 🧱 Arquitetura & otimizações atuais
 
-### Configurações avançadas do Spark
-- **Adaptive Query Execution (AQE)**: `spark.sql.adaptive.enabled=true` permite que o Spark ajuste dinamicamente o plano de execução com base nos dados processados.
-- **Kryo serialization**: `spark.serializer=org.apache.spark.serializer.KryoSerializer` para serialização mais eficiente.
-- **Reparticionamento eficiente**: `spark.sql.shuffle.partitions=32` ajustado com base em benchmarks no Colab.
-- **Broadcast explícito**: aplicado a dimensões pequenas (`restaurants` e `abmap`) para otimizar os joins.
-- **Persistência estratégica**: uso de `.cache()` nos DataFrames principais para evitar recomputação em etapas subsequentes.
+### ETL otimizado
+1. **Janela de análise antes do join**:
+   - Filtramos `orders` pelo período do experimento antes de fazer os joins.
+   - **Impacto:** Reduz shuffle, memória e custo de join.
 
-### Otimizações no ETL
-- **Cache estratégico**: DataFrames como `orders`, `consumers`, `restaurants` e `abmap` são cacheados após conformação para melhorar o desempenho em operações repetidas.
-- **Seleção de colunas antes dos joins**: reduz o uso de memória e I/O, mantendo apenas as colunas necessárias.
-- **Parquet como formato de saída**: após o ETL, os DataFrames processados podem ser salvos em Parquet para acelerar leituras futuras.
+2. **Projeção mínima de colunas**:
+   - Selecionamos apenas as colunas necessárias antes dos joins.
+   - **Impacto:** Menos shuffle/memória, joins e writes mais rápidos.
+
+3. **Reparticionamento por chave de join**:
+   - `orders` é reparticionado por `customer_id` usando `spark.sql.shuffle.partitions`.
+   - **Impacto:** Melhor balanceamento no shuffle durante o join.
+
+4. **Broadcast de dimensão pequena**:
+   - `restaurants` é broadcast para habilitar broadcast-hash join.
+   - **Impacto:** Elimina shuffle dessa tabela e acelera o join.
+
+5. **Controles de verbosidade e cache**:
+   - `verbose=False` por padrão: evita operações caras como `count()` e `show()` desnecessários.
+   - `cache_intermediates=False` por padrão: reduz risco de OOM.
+
+6. **Escrita em Parquet mais leve**:
+   - Coalescemos a saída (ex.: 8 arquivos) antes do write para evitar explosão de arquivos.
+   - **Impacto:** Reduz overhead de metadados e pressão no driver.
+
+### Configurações do Spark para Colab
+- **AQE ligado:** `spark.sql.adaptive.enabled=true` (ajuste dinâmico de planos de execução).
+- **Serializer Kryo:** menos overhead de serialização.
+- **Timezone fixa (UTC):** evita bugs de conversão.
+- **spark.sql.shuffle.partitions:** controlado via settings (128 no Colab).
+
+### Leituras e conformizações robustas
+- **Reader resiliente de orders:** detecta NDJSON ou JSON array e tem fallback com gzip/json.
+- **Sanitização de PII e tipagem:** normalizamos timestamps, lat/long, flags, calculamos `basket_size` de forma segura, e removemos/hasheamos PII.
+- **Checagens prévias (preflight):** verificamos tamanhos, compressão e candidatos do `ab_test_ref` antes de acionar o Spark; falha cedo em caso de problema.
 
 ---
 
@@ -195,8 +219,8 @@ Esses passos mostram maturidade de engenharia e evitam “rodar com tabelas vazi
 ## 📌 Resumo para a apresentação
 
 - **Por que Colab-only?** Reprodutibilidade e simplicidade para os avaliadores.  
-- **Gargalo conhecido**: `orders` é grande e gzip não é splittable → leitura 1 task; depois **repartition + broadcast**.  
-- **Qualidade**: pré-flight fail-fast + profiling guiando o ETL; timezone/PII/validações.  
+- **Gargalo conhecido:** `orders` é grande e gzip não é splittable → leitura 1 task; depois **repartition + broadcast**.  
+- **Qualidade:** pré-flight fail-fast + profiling guiando o ETL; timezone/PII/validações.  
 - **A/B → ROI → RFM** na ordem pedida, com **premissas explícitas** e **próximos passos**.
 
 ---
