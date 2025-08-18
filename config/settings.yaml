@@ -2,7 +2,7 @@ runtime:
   spark:
     app_name: "ifood-case-cupons"
     driver_memory: "12g"
-    shuffle_partitions: 32
+    shuffle_partitions: 128
     conf:
       spark.master: "local[*]"
       spark.sql.adaptive.enabled: "true"
