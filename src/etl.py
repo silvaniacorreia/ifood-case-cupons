@@ -296,6 +296,9 @@ def clean_and_conform(
     experiment_start: str | None = None,
     experiment_end: str | None = None,
     auto_infer_window: bool = True,
+    use_quantile_window: bool = False,    
+    cache_intermediates: bool = False,    
+    verbose: bool = False,                
 ) -> DataFrame:
     # Conformações
     o = conform_orders(orders, business_tz=business_tz)
@@ -303,73 +306,78 @@ def clean_and_conform(
     r = conform_restaurants(restaurants)
     a = conform_abmap(abmap)
 
-    # Cache DataFrames que serão usados repetidamente
-    o = o.cache()
-    c = c.cache()
-    r = r.cache()
-    a = a.cache()
+       # (opcional) cache leve – desligado no Colab por padrão
+    if cache_intermediates:
+        o = o.persist()
+        c = c.persist()
+        r = r.persist()
+        a = a.persist()
 
-    print("[ETL] counts: orders_raw =", orders.count())
-    print("[ETL] counts: orders_conformed (event_ts_utc not null) =", o.filter(F.col("event_ts_utc").isNotNull()).count())
-    print("[ETL] counts: abmap =", a.count())
+    if verbose:
+        print("[ETL] counts: orders_raw =", orders.count())
+        print("[ETL] counts: orders_conformed (event_ts_utc not null) =", o.filter(F.col("event_ts_utc").isNotNull()).count())
+        print("[ETL] counts: abmap =", a.count())
 
-    # Reparticionamento eficiente (apenas uma vez, após conformações)
-    parts = int(o.sql_ctx.getConf("spark.sql.shuffle.partitions"))
-    o = o.repartition(parts, "customer_id")
-
-    # Seleciona apenas colunas necessárias antes dos joins
-    c = c.select("customer_id", "language", "active", "phone_hash", "consumer_created_at")
-    r = r.select(
-        "merchant_id", "enabled", "price_range", "average_ticket", "delivery_time",
-        "minimum_order_value", "merchant_city", "merchant_state", "merchant_country", "merchant_created_at"
-    )
-    a = a.select("customer_id", "is_target")
-
-    # Broadcast joins para dimensões pequenas
-    r = broadcast(r)
-    if a.count() <= 2_000_000:
-        a = broadcast(a)
-
-    # Joins
-    df = (
-        o.join(c, on="customer_id", how="left")
-         .join(r, on="merchant_id", how="left")
-         .join(a, on="customer_id", how="left")
-    )
-
-    print("[ETL] after join (total) =", df.count())
-
-    # Filtro de grupo
-    if treat_is_target_null_as_control:
-        df = df.withColumn("is_target", F.coalesce(F.col("is_target"), F.lit(0)))
-    else:
-        before = df.count()
-        df = df.filter(F.col("is_target").isNotNull())
-        print("[ETL] drop is_target null ->", before, "→", df.count())
-
-    # Janela do experimento
+    # ===== Janela ANTES do join (reduz dados cedo) =====
     start_str, end_str = experiment_start, experiment_end
     if auto_infer_window and not (start_str or end_str):
-        mm = (o.agg(F.min("event_ts_utc").alias("min_ts"),
-                    F.max("event_ts_utc").alias("max_ts"))
-                .first())
-        if mm and mm["min_ts"] and mm["max_ts"]:
-            start_str = mm["min_ts"].date().isoformat()
-            end_str   = (mm["max_ts"].date() + dt.timedelta(days=1)).isoformat()
-            print(f"[ETL] Janela INFERIDA a partir dos dados (UTC): start={start_str} end={end_str} (end exclusivo)")
+        if use_quantile_window:
+            q = o.select(F.col("event_ts_utc").cast("long").alias("t")).na.drop()
+            q01, q99 = q.approxQuantile("t", [0.01, 0.99], 0.001)
+            if q01 and q99:
+                start_dt = dt.datetime.utcfromtimestamp(int(q01))
+                end_dt   = dt.datetime.utcfromtimestamp(int(q99)) + dt.timedelta(days=1)
+                start_str, end_str = start_dt.date().isoformat(), end_dt.date().isoformat()
+                if verbose:
+                    print(f"[ETL] Janela INFERIDA (quantis 1–99%): start={start_str} end={end_str} (end exclusivo)")
         else:
-            print("[ETL] Não foi possível inferir janela — sem filtro.")
+            mm = (o.agg(F.min("event_ts_utc").alias("min_ts"),
+                        F.max("event_ts_utc").alias("max_ts")).first())
+            if mm and mm["min_ts"] and mm["max_ts"]:
+                start_str = mm["min_ts"].date().isoformat()
+                end_str   = (mm["max_ts"].date() + dt.timedelta(days=1)).isoformat()
+                if verbose:
+                    print(f"[ETL] Janela INFERIDA a partir dos dados (UTC): start={start_str} end={end_str} (end exclusivo)")
 
-    before = df.count()
-    if start_str:
-        df = df.filter(F.col("event_ts_utc") >= F.to_timestamp(F.lit(start_str)))
-    if end_str:
-        df = df.filter(F.col("event_ts_utc") < F.to_timestamp(F.lit(end_str)))
-    if (start_str or end_str):
-        print("[ETL] filtro janela ->", before, "→", df.count())
+    if start_str or end_str:
+        before = (o.count() if verbose else None)
+        if start_str:
+            o = o.filter(F.col("event_ts_utc") >= F.to_timestamp(F.lit(start_str)))
+        if end_str:
+            o = o.filter(F.col("event_ts_utc") < F.to_timestamp(F.lit(end_str)))
+        if verbose:
+            print("[ETL] filtro janela em ORDERS ->", before, "→", o.count())
 
-    # Persistência estratégica para evitar recomputação em etapas seguintes
-    df = df.cache()
+    # ===== Repartição e projeções mínimas =====
+    parts = int(o.sparkSession.conf.get("spark.sql.shuffle.partitions"))
+    o = o.repartition(parts, "customer_id")
+
+    c = c.select("customer_id", "language", "active", "phone_hash", "consumer_created_at")
+    r = r.select("merchant_id", "enabled", "price_range", "average_ticket", "delivery_time",
+                 "minimum_order_value", "merchant_city", "merchant_state", "merchant_country", "merchant_created_at")
+    a = a.select("customer_id", "is_target")
+
+    # ===== Broadcast em dimensões pequenas =====
+    r = F.broadcast(r)
+    # a ~806k linhas; pode ou não broadcast (deixe o Spark decidir com AQE, ou force se quiser)
+    # a = F.broadcast(a)
+
+    # ===== Joins =====
+    df = (o.join(c, on="customer_id", how="left")
+            .join(r, on="merchant_id", how="left")
+            .join(a, on="customer_id", how="left"))
+
+    if not treat_is_target_null_as_control:
+        if verbose:
+            before = df.count()
+        df = df.filter(F.col("is_target").isNotNull())
+        if verbose:
+            print("[ETL] drop is_target null ->", before, "→", df.count())
+    else:
+        df = df.withColumn("is_target", F.coalesce(F.col("is_target"), F.lit(0)))
+
+    if cache_intermediates:
+        df = df.persist()
 
     return df
 
