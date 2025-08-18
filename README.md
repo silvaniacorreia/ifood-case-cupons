@@ -51,40 +51,63 @@ ifood-case-cupons/
 ## 🧱 Arquitetura & otimizações atuais
 
 ### ETL otimizado
-1. **Janela de análise antes do join**:
-   - Filtramos `orders` pelo período do experimento antes de fazer os joins.
-   - **Impacto:** Reduz shuffle, memória e custo de join.
+1. **Janela de análise antes do join (robusta a outliers)**  
+   A janela é **inferida automaticamente pelos quantis 1–99% de `event_ts_utc`** e aplicada **antes** dos joins.  
+   **Impacto:** reduz shuffle, memória e custo de join sem ser “puxada” por timestamps anômalos.
 
-2. **Projeção mínima de colunas**:
-   - Selecionamos apenas as colunas necessárias antes dos joins.
-   - **Impacto:** Menos shuffle/memória, joins e writes mais rápidos.
+2. **Projeção mínima de colunas**  
+   Selecionamos apenas as colunas necessárias antes dos joins.  
+   **Impacto:** menos shuffle/memória, joins e writes mais rápidos.
 
-3. **Reparticionamento por chave de join**:
-   - `orders` é reparticionado por `customer_id` usando `spark.sql.shuffle.partitions`.
-   - **Impacto:** Melhor balanceamento no shuffle durante o join.
+3. **Reparticionamento por chave de join**  
+   `orders` é reparticionado por `customer_id` usando `spark.sql.shuffle.partitions`.  
+   **Impacto:** melhor balanceamento no shuffle durante o join.
 
-4. **Broadcast de dimensão pequena**:
-   - `restaurants` é broadcast para habilitar broadcast-hash join.
-   - **Impacto:** Elimina shuffle dessa tabela e acelera o join.
+4. **Broadcast de dimensão pequena**  
+   `restaurants` é broadcast para habilitar broadcast-hash join.  
+   **Impacto:** elimina shuffle dessa dimensão e acelera o join.
 
-5. **Controles de verbosidade e cache**:
-   - `verbose=False` por padrão: evita operações caras como `count()` e `show()` desnecessários.
-   - `cache_intermediates=False` por padrão: reduz risco de OOM.
+5. **Controles de verbosidade e cache**  
+   `verbose=False` por padrão (evita `count()`/`show()` desnecessários) e `cache_intermediates=False` (reduz risco de OOM).
 
-6. **Escrita em Parquet mais leve**:
-   - Coalescemos a saída (ex.: 8 arquivos) antes do write para evitar explosão de arquivos.
-   - **Impacto:** Reduz overhead de metadados e pressão no driver.
+6. **Escrita em Parquet opcional e leve**  
+   Persistência é **opcional** (desligada por padrão). Ao salvar, usamos `partitionBy(event_date_brt)` e **coalesce** para evitar explosão de arquivos.
 
 ### Configurações do Spark para Colab
-- **AQE ligado:** `spark.sql.adaptive.enabled=true` (ajuste dinâmico de planos de execução).
-- **Serializer Kryo:** menos overhead de serialização.
-- **Timezone fixa (UTC):** evita bugs de conversão.
-- **spark.sql.shuffle.partitions:** controlado via settings (128 no Colab).
+- **AQE ligado:** `spark.sql.adaptive.enabled=true`
+- **Serializer Kryo:** menor overhead de serialização
+- **Timezone fixa (UTC):** conversões consistentes
+- **`spark.sql.shuffle.partitions`:** 32 (definido por testes de benchmark) via `config/settings.yaml`
+
+**Exemplo de `runtime.spark.conf` no Colab:**
+```yaml
+runtime:
+  spark:
+    app_name: "ifood-case-cupons"
+    driver_memory: "12g"
+    shuffle_partitions: 128
+    conf:
+      spark.master: "local[*]"
+      spark.sql.adaptive.enabled: "true"
+      spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark.sql.files.maxPartitionBytes: "64m"
+      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+      spark.memory.fraction: "0.6"
+      spark.sql.autoBroadcastJoinThreshold: "50MB"
+```
 
 ### Leituras e conformizações robustas
 - **Reader resiliente de orders:** detecta NDJSON ou JSON array e tem fallback com gzip/json.
 - **Sanitização de PII e tipagem:** normalizamos timestamps, lat/long, flags, calculamos `basket_size` de forma segura, e removemos/hasheamos PII.
 - **Checagens prévias (preflight):** verificamos tamanhos, compressão e candidatos do `ab_test_ref` antes de acionar o Spark; falha cedo em caso de problema.
+
+### Enriquecimentos para análise (camada “silver”)
+- **`origin_platform` nulo → `"unknown"`** (evita perdas em cortes por canal).
+- **Campos de consumidor faltantes**: versões limpas para segmentação (ex.: `language_clean = coalesce(language, 'unknown')`), mantendo os originais para auditoria.
+- **Atributos de restaurante imputados (colunas paralelas)**  
+  - `minimum_order_value_imputed`: mediana por (`merchant_city`, `price_range`) com fallback por `price_range`.  
+  - `delivery_time_imputed`: mediana por `price_range`.  
+  As colunas **originais são preservadas**; as versões imputadas são usadas apenas para diagnóstico/controle (ex.: balance check/CUPED).
 
 ---
 

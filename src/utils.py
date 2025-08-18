@@ -51,6 +51,15 @@ class Settings(BaseModel):
     finance: FinanceConfig = FinanceConfig()
 
 def load_settings(path: str = "config/settings.yaml") -> Settings:
+    """
+    Carrega as configurações do arquivo YAML especificado.
+
+    Parâmetros:
+        path (str): Caminho para o arquivo de configurações YAML.
+
+    Retorna:
+        Settings: Objeto contendo as configurações carregadas.
+    """
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     return Settings(**raw)
@@ -62,6 +71,17 @@ def set_seeds(seed: int = 42):
 from pyspark.sql import SparkSession
 
 def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | None = None):
+    """
+    Inicializa uma SparkSession com configurações padrão e adicionais.
+
+    Parâmetros:
+        app_name (str): Nome do aplicativo Spark.
+        shuffle_partitions (int): Número de partições para operações de shuffle.
+        extra_conf (dict | None): Configurações adicionais para a SparkSession.
+
+    Retorna:
+        SparkSession: Instância configurada da SparkSession.
+    """
     builder = (
         SparkSession.builder
         .appName(app_name)
@@ -107,4 +127,11 @@ def benchmark_shuffle(spark: SparkSession, df, shuffle_partitions_list: list[int
         results[partitions] = elapsed_time
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
     return results
+
+"""
+Este módulo fornece:
+- Modelos de configuração usando Pydantic
+- Funções para carregar configurações e inicializar SparkSession
+- Utilitários para benchmarking e controle de sementes
+"""
 

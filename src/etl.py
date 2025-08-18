@@ -1,4 +1,12 @@
 # Funções de ETL: ingestão, limpeza, normalização (timezone/PII), joins e agregações
+"""
+Funções principais para o pipeline ETL, incluindo:
+- Leitura de dados brutos (JSON, CSV)
+- Limpeza e conformidade de dados
+- Joins e agregações
+- Normalização de timestamps
+"""
+
 from __future__ import annotations
 import os
 import datetime as dt
@@ -15,7 +23,13 @@ from src.checks import preflight, sniff_orders_format, list_valid_ab_csvs
 
 def _parse_ts_any(colname: str) -> F.Column:
     """
-    Função para parsear timestamps em diferentes formatos.
+    Parseia timestamps em diferentes formatos para um formato unificado.
+
+    Parâmetros:
+        colname (str): Nome da coluna contendo os timestamps.
+
+    Retorna:
+        F.Column: Coluna Spark com timestamps normalizados.
     """
     c = F.col(colname).cast("string")
     return F.coalesce(
@@ -30,11 +44,17 @@ def _parse_ts_any(colname: str) -> F.Column:
 
 def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, DataFrame]:
     """
-    Lê os 4 insumos do case a partir de data/raw/.
-    Retorna: (orders, consumers, restaurants, abmap)
+    Lê os insumos brutos do diretório especificado e retorna DataFrames Spark.
+
+    Parâmetros:
+        spark (SparkSession): Sessão Spark ativa.
+        raw_dir (str): Caminho para o diretório contendo os dados brutos.
+
+    Retorna:
+        Tuple[DataFrame, DataFrame, DataFrame, DataFrame]:
+            DataFrames para pedidos, consumidores, restaurantes e mapa A/B.
     """
     raw_dir = os.path.abspath(raw_dir)
-    # 0) pré-checagens (fail-fast)
     rep = preflight(raw_dir, strict=True)
     print("[ETL] preflight OK:", {
         "orders_fmt": rep.get("orders_format_guess"),
@@ -46,37 +66,19 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
     restaurants_path = os.path.join(raw_dir, "restaurant.csv.gz")
     ab_dir           = os.path.join(raw_dir, "ab_test_ref_extracted")
 
-    # --- ORDERS: leitura robusta (NDJSON ou JSON array) ---
-    def read_orders_auto(path: str) -> DataFrame:
-        df_try = spark.read.json(path)    # NDJSON/objetos por linha (distribuída)
-        if df_try.count() > 5:
-            return df_try
-        # fallback: cheirar o arquivo
-        with gzip.open(path, "rt", encoding="utf-8") as f:
-            first_non_ws = None
-            while True:
-                ch = f.read(1)
-                if not ch:
-                    break
-                if not ch.isspace():
-                    first_non_ws = ch
-                    break
-            f.seek(0)
-            if first_non_ws == "[":
-                data = json.load(f) 
-                return spark.createDataFrame(data)
-            else:
-                data = [json.loads(line) for line in f if line.strip()]
-                return spark.createDataFrame(data)
-
     orders_sharded = Path(raw_dir) / "orders_sharded"
     if orders_sharded.exists() and any(orders_sharded.glob("part-*.json")):
         print("[ETL] Lendo orders a partir de shards:", orders_sharded)
         orders = spark.read.json(str(orders_sharded / "part-*.json"))
     else:
-        print("[ETL] Lendo orders do único .gz (primeira vez, 1 task):", orders_path)
-        orders = read_orders_auto(orders_path)
-
+        print("[ETL] Lendo orders do único .gz:", orders_path)
+        fmt = rep.get("orders_format_guess", "ndjson_or_objects")
+        if fmt == "json_array":
+            with gzip.open(orders_path, "rt", encoding="utf-8") as f:
+                data = json.load(f)
+            orders = spark.createDataFrame(data)
+        else:
+            orders = spark.read.json(orders_path)
 
     consumers = (
         spark.read
@@ -92,7 +94,6 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
         .csv(restaurants_path)
     )
 
-    # --- A/B: ler TODOS os CSVs válidos (ignora ._* e minúsculos) ---
     csv_paths = [str(p) for p in list_valid_ab_csvs(Path(ab_dir))]
     if not csv_paths:
         raise FileNotFoundError(f"Nenhum CSV válido encontrado em {ab_dir}")
@@ -300,13 +301,11 @@ def clean_and_conform(
     cache_intermediates: bool = False,    
     verbose: bool = False,                
 ) -> DataFrame:
-    # Conformações
     o = conform_orders(orders, business_tz=business_tz)
     c = conform_consumers(consumers)
     r = conform_restaurants(restaurants)
     a = conform_abmap(abmap)
 
-       # (opcional) cache leve – desligado no Colab por padrão
     if cache_intermediates:
         o = o.persist()
         c = c.persist()
@@ -314,11 +313,8 @@ def clean_and_conform(
         a = a.persist()
 
     if verbose:
-        print("[ETL] counts: orders_raw =", orders.count())
-        print("[ETL] counts: orders_conformed (event_ts_utc not null) =", o.filter(F.col("event_ts_utc").isNotNull()).count())
-        print("[ETL] counts: abmap =", a.count())
+        pass
 
-    # ===== Janela ANTES do join (reduz dados cedo) =====
     start_str, end_str = experiment_start, experiment_end
     if auto_infer_window and not (start_str or end_str):
         if use_quantile_window:
@@ -340,15 +336,13 @@ def clean_and_conform(
                     print(f"[ETL] Janela INFERIDA a partir dos dados (UTC): start={start_str} end={end_str} (end exclusivo)")
 
     if start_str or end_str:
-        before = (o.count() if verbose else None)
         if start_str:
             o = o.filter(F.col("event_ts_utc") >= F.to_timestamp(F.lit(start_str)))
         if end_str:
             o = o.filter(F.col("event_ts_utc") < F.to_timestamp(F.lit(end_str)))
         if verbose:
-            print("[ETL] filtro janela em ORDERS ->", before, "→", o.count())
+            pass
 
-    # ===== Repartição e projeções mínimas =====
     parts = int(o.sparkSession.conf.get("spark.sql.shuffle.partitions"))
     o = o.repartition(parts, "customer_id")
 
@@ -359,8 +353,6 @@ def clean_and_conform(
 
     # ===== Broadcast em dimensões pequenas =====
     r = F.broadcast(r)
-    # a ~806k linhas; pode ou não broadcast (deixe o Spark decidir com AQE, ou force se quiser)
-    # a = F.broadcast(a)
 
     # ===== Joins =====
     df = (o.join(c, on="customer_id", how="left")
@@ -369,10 +361,10 @@ def clean_and_conform(
 
     if not treat_is_target_null_as_control:
         if verbose:
-            before = df.count()
+            pass
         df = df.filter(F.col("is_target").isNotNull())
         if verbose:
-            print("[ETL] drop is_target null ->", before, "→", df.count())
+            pass
     else:
         df = df.withColumn("is_target", F.coalesce(F.col("is_target"), F.lit(0)))
 
@@ -411,8 +403,6 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
 
     OBS: as colunas originais permanecem intactas para auditoria.
     """
-    from pyspark.sql import functions as F
-
     base = (
         df_orders_silver
         .withColumn(
@@ -431,39 +421,34 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
         )
     )
 
-    # ---- MOV (minimum_order_value) imputado ----
-    mov_city_range = (
-        base.groupBy("merchant_city", "price_range")
-            .agg(F.expr("percentile_approx(minimum_order_value, 0.5)").alias("mov_med_city_range"))
-    )
+    # ===== MOV imputado por média em nível de price_range =====
     mov_range = (
         base.groupBy("price_range")
-            .agg(F.expr("percentile_approx(minimum_order_value, 0.5)").alias("mov_med_range"))
+            .agg(F.avg("minimum_order_value").alias("mov_mean_range"))
     )
     base = (
         base
-        .join(mov_city_range, ["merchant_city", "price_range"], "left")
         .join(mov_range, ["price_range"], "left")
         .withColumn(
             "minimum_order_value_imputed",
-            F.coalesce("minimum_order_value", "mov_med_city_range", "mov_med_range")
+            F.coalesce(F.col("minimum_order_value"), F.col("mov_mean_range"))
         )
-        .drop("mov_med_city_range", "mov_med_range")
+        .drop("mov_mean_range")
     )
 
-    # ---- delivery_time imputado (mediana por price_range) ----
+    # ===== delivery_time imputado por média em nível de price_range =====
     deliv_range = (
         base.groupBy("price_range")
-            .agg(F.expr("percentile_approx(delivery_time, 0.5)").alias("del_med_range"))
+            .agg(F.avg("delivery_time").alias("del_mean_range"))
     )
     base = (
         base
         .join(deliv_range, ["price_range"], "left")
         .withColumn(
             "delivery_time_imputed",
-            F.coalesce("delivery_time", "del_med_range")
+            F.coalesce(F.col("delivery_time"), F.col("del_mean_range"))
         )
-        .drop("del_med_range")
+        .drop("del_mean_range")
     )
 
     return base
