@@ -71,7 +71,7 @@ def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | No
         .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")  
         .config("spark.sql.session.timeZone", "UTC")
-        .config("spark.ui.showConsoleProgress", "false")
+        .config("spark.ui.showConsoleProgress", "false") 
         .config("spark.driver.extraJavaOptions", "-Xss8m")
     )
     if extra_conf:
@@ -84,7 +84,6 @@ def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | No
     spark.conf.set("spark.sql.adaptive.enabled", "true")
     spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
     spark.conf.set("spark.sql.session.timeZone", "UTC")
-    spark.conf.set("spark.ui.showConsoleProgress", "false")
     if extra_conf:
         for k, v in extra_conf.items():
             spark.conf.set(k, v)
