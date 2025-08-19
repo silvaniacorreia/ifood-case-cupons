@@ -6,50 +6,30 @@ from scipy import stats
 from pyspark.sql import DataFrame, functions as F
 
 # ========== MÉTRICAS ==========
-def compute_ab_summary(
-    metrics,
-    take_rate: float = 0.23,
-    coupon_cost: float = 10.0,
-    redemption_rate: float = 0.25,
-):
+def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
     """
-    Calcula resumo financeiro e de impacto do experimento A/B.
-    Inclui métricas ROI, CAC, LTV e LTV:CAC.
+    Resumo descritivo por grupo A/B (controle vs tratamento).
+    Métricas:
+      - usuarios: contagem de usuários
+      - pedidos_user: média de pedidos por usuário
+      - gmv_user: média de GMV por usuário
+      - conversao: % usuários com >=1 pedido
+      - aov: média do ticket por usuário (apenas frequência > 0)
+    Retorna um DataFrame Spark com uma linha por grupo (is_target ∈ {0,1}).
     """
-    n_treated = metrics["usuarios_treat"]
-    gmv_user_treat = metrics["gmv_user_treat"]
-    gmv_user_ctrl = metrics["gmv_user_ctrl"]
-
-    uplift_gmv_user = gmv_user_treat - gmv_user_ctrl
-    receita_incremental_total = uplift_gmv_user * n_treated * take_rate
-
-    custo_total = n_treated * coupon_cost * redemption_rate
-    roi_absoluto = receita_incremental_total - custo_total
-    roi_por_usuario = roi_absoluto / n_treated
-
-    # novas métricas
-    ltv = gmv_user_treat * take_rate
-    n_redim = max(1, int(n_treated * redemption_rate))
-    cac = custo_total / n_redim
-    ltv_cac_ratio = ltv / cac if cac > 0 else None
-
-    return {
-        "n_treated": n_treated,
-        "gmv_user_treat": gmv_user_treat,
-        "gmv_user_ctrl": gmv_user_ctrl,
-        "uplift_gmv_user": uplift_gmv_user,
-        "take_rate": take_rate,
-        "coupon_cost": coupon_cost,
-        "redemption_rate": redemption_rate,
-        "receita_incremental_total": receita_incremental_total,
-        "custo_total": custo_total,
-        "roi_absoluto": roi_absoluto,
-        "roi_por_usuario": roi_por_usuario,
-        # novas métricas
-        "ltv": ltv,
-        "cac": cac,
-        "ltv_cac_ratio": ltv_cac_ratio,
-    }
+    aov_user = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
+    return (
+        users_silver
+        .groupBy("is_target")
+        .agg(
+            F.countDistinct("customer_id").alias("usuarios"),
+            F.avg("frequency").alias("pedidos_user"),
+            F.avg("monetary").alias("gmv_user"),
+            F.avg((F.col("frequency") > 0).cast("double")).alias("conversao"),
+            F.avg(aov_user).alias("aov"),
+        )
+        .orderBy("is_target")
+    )
 
 def collect_user_level_for_tests(users_silver: DataFrame) -> pd.DataFrame:
     """
@@ -96,15 +76,12 @@ def compute_robust_metrics(
         rows.append({
             "is_target": int(grp),
             "usuarios": int(len(g)),
-            # medianas
             "median_gmv_user": float(gmv.median()),
             "median_pedidos_user": float(freq.median()),
             "median_aov_user": float(aov.median(skipna=True)),
-            # p95
             "p95_gmv_user": _p95(gmv),
             "p95_pedidos_user": _p95(freq),
             "p95_aov_user": _p95(aov.dropna()),
-            # heavy users
             "heavy_users_rate": _heavy_rate(freq, heavy_threshold),
             "heavy_threshold": heavy_threshold,
         })
@@ -188,36 +165,48 @@ def financial_viability(
     users_pdf: pd.DataFrame,
     *,
     take_rate: float = 0.23,
-    coupon_cost: float = 10.0,  
+    coupon_cost: float = 10.0,
     redemption_rate: float | None = None,
+    winsor: float | None = None,  # ex.: 0.01 aplica winsor 1% e 99% em monetary
 ) -> Dict[str, float]:
     """
-    Estima a viabilidade financeira da campanha.
-    Definições:
-      - Uplift de GMV por usuário: E[GMV_user|T] - E[GMV_user|C]
-      - Receita incremental total: uplift_user * N_tratados * take_rate
-      - Custo da campanha: N_tratados * redemption_rate * coupon_cost
-        (se redemption_rate=None, usa conversão no tratamento como aproximação superior)
-      - ROI absoluto: Receita incremental total - Custo
-      - ROI por usuário tratado: ROI absoluto / N_tratados
-    Retorna um dicionário com métricas de resultado.
+    Estima viabilidade financeira da campanha a partir de dados no nível de usuário.
+    - Receita incremental total = (E[GMV_user|T] - E[GMV_user|C]) * N_tratados * take_rate
+    - Custo total = N_tratados * redemption_rate * coupon_cost
+      (se redemption_rate=None, usa conversão do tratamento como aproximação superior)
+    - ROI absoluto = Receita incremental total - Custo
+    - ROI por usuário = ROI absoluto / N_tratados
+    - LTV (horizonte do experimento) = take_rate * E[GMV_user|T]
+    - CAC = custo_total / (# usuários que resgataram) ≈ coupon_cost
     """
-    t = users_pdf[users_pdf["is_target"] == 1]
-    c = users_pdf[users_pdf["is_target"] == 0]
+    df = users_pdf.copy()
+    # preparo
+    df["conv_flag"] = (df["frequency"] > 0).astype(int)
+    if winsor is not None and 0 < winsor < 0.5:
+        lo, hi = df["monetary"].quantile([winsor, 1 - winsor])
+        df["monetary"] = df["monetary"].clip(lo, hi)
+
+    t = df[df["is_target"] == 1]
+    c = df[df["is_target"] == 0]
     n_t = len(t)
 
     gmv_t = float(t["monetary"].mean())
     gmv_c = float(c["monetary"].mean())
     uplift_user = gmv_t - gmv_c
 
-    receita_inc_total = uplift_user * n_t * take_rate
-
-    conv_t = float(t["conv_flag"].mean()) if "conv_flag" in t.columns else float((t["frequency"] > 0).mean())
+    conv_t = float(t["conv_flag"].mean())
     red = conv_t if redemption_rate is None else redemption_rate
+
+    receita_inc_total = uplift_user * n_t * take_rate
     custo_total = n_t * red * coupon_cost
 
     roi_abs = receita_inc_total - custo_total
     roi_user = roi_abs / n_t if n_t > 0 else np.nan
+
+    # LTV/CAC
+    ltv = take_rate * gmv_t
+    n_red = max(1, int(n_t * red))
+    cac = custo_total / n_red
 
     return {
         "n_treated": n_t,
@@ -231,4 +220,6 @@ def financial_viability(
         "custo_total": custo_total,
         "roi_absoluto": roi_abs,
         "roi_por_usuario": roi_user,
+        "ltv": ltv,
+        "cac": cac,
     }
