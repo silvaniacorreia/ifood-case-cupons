@@ -6,34 +6,50 @@ from scipy import stats
 from pyspark.sql import DataFrame, functions as F
 
 # ========== MÉTRICAS ==========
-def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
+def compute_ab_summary(
+    metrics,
+    take_rate: float = 0.23,
+    coupon_cost: float = 10.0,
+    redemption_rate: float = 0.25,
+):
     """
-    Gera o resumo por grupo A/B com as principais métricas.
-    Métricas:
-      - usuarios: contagem de usuários
-      - pedidos_user: média de pedidos por usuário
-      - gmv_user: média de GMV por usuário
-      - conversao: % usuários com >=1 pedido
-      - aov: média do ticket por usuário (monetary/frequency, apenas frequency>0)
-    Retorna um DataFrame Spark com uma linha por grupo is_target ∈ {0,1}.
+    Calcula resumo financeiro e de impacto do experimento A/B.
+    Inclui métricas ROI, CAC, LTV e LTV:CAC.
     """
-    base = users_silver.select("customer_id", "is_target", "frequency", "monetary")
+    n_treated = metrics["usuarios_treat"]
+    gmv_user_treat = metrics["gmv_user_treat"]
+    gmv_user_ctrl = metrics["gmv_user_ctrl"]
 
-    aov_user = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
+    uplift_gmv_user = gmv_user_treat - gmv_user_ctrl
+    receita_incremental_total = uplift_gmv_user * n_treated * take_rate
 
-    summary = (
-        base.groupBy("is_target")
-            .agg(
-                F.countDistinct("customer_id").alias("usuarios"),
-                F.avg("frequency").alias("pedidos_user"),
-                F.avg("monetary").alias("gmv_user"),
-                F.avg((F.col("frequency") > 0).cast("double")).alias("conversao"),
-                F.avg(aov_user).alias("aov")
-            )
-            .orderBy("is_target")
-    )
-    return summary
+    custo_total = n_treated * coupon_cost * redemption_rate
+    roi_absoluto = receita_incremental_total - custo_total
+    roi_por_usuario = roi_absoluto / n_treated
 
+    # novas métricas
+    ltv = gmv_user_treat * take_rate
+    n_redim = max(1, int(n_treated * redemption_rate))
+    cac = custo_total / n_redim
+    ltv_cac_ratio = ltv / cac if cac > 0 else None
+
+    return {
+        "n_treated": n_treated,
+        "gmv_user_treat": gmv_user_treat,
+        "gmv_user_ctrl": gmv_user_ctrl,
+        "uplift_gmv_user": uplift_gmv_user,
+        "take_rate": take_rate,
+        "coupon_cost": coupon_cost,
+        "redemption_rate": redemption_rate,
+        "receita_incremental_total": receita_incremental_total,
+        "custo_total": custo_total,
+        "roi_absoluto": roi_absoluto,
+        "roi_por_usuario": roi_por_usuario,
+        # novas métricas
+        "ltv": ltv,
+        "cac": cac,
+        "ltv_cac_ratio": ltv_cac_ratio,
+    }
 
 def collect_user_level_for_tests(users_silver: DataFrame) -> pd.DataFrame:
     """
@@ -50,6 +66,49 @@ def collect_user_level_for_tests(users_silver: DataFrame) -> pd.DataFrame:
     )
     return pdf
 
+def compute_robust_metrics(
+    users_pdf: pd.DataFrame,
+    *,
+    heavy_threshold: int = 3
+) -> pd.DataFrame:
+    """
+    Calcula métricas robustas por grupo (controle vs tratamento):
+      - Medianas de GMV/usuário, pedidos/usuário e AOV.
+      - p95 (percentil 95) para as mesmas métricas.
+      - Heavy users: % de usuários com frequência >= heavy_threshold.
+    Retorna um DataFrame pandas com uma linha por grupo (is_target).
+    """
+    def _p95(x: pd.Series) -> float:
+        x = x.dropna().astype(float)
+        return float(np.percentile(x, 95)) if len(x) else np.nan
+
+    def _heavy_rate(freq: pd.Series, thr: int) -> float:
+        freq = freq.fillna(0).astype(float)
+        n = len(freq)
+        return float((freq >= thr).mean()) if n > 0 else np.nan
+
+    rows = []
+    for grp, g in users_pdf.groupby("is_target"):
+        gmv = g["monetary"].astype(float)
+        freq = g["frequency"].astype(float)
+        aov = g["aov_user"].astype(float)
+
+        rows.append({
+            "is_target": int(grp),
+            "usuarios": int(len(g)),
+            # medianas
+            "median_gmv_user": float(gmv.median()),
+            "median_pedidos_user": float(freq.median()),
+            "median_aov_user": float(aov.median(skipna=True)),
+            # p95
+            "p95_gmv_user": _p95(gmv),
+            "p95_pedidos_user": _p95(freq),
+            "p95_aov_user": _p95(aov.dropna()),
+            # heavy users
+            "heavy_users_rate": _heavy_rate(freq, heavy_threshold),
+            "heavy_threshold": heavy_threshold,
+        })
+    return pd.DataFrame(rows)
 
 # ========== TESTES ==========
 def welch_ttest(x_treat: pd.Series, x_ctrl: pd.Series) -> Dict[str, float]:
@@ -60,6 +119,17 @@ def welch_ttest(x_treat: pd.Series, x_ctrl: pd.Series) -> Dict[str, float]:
     res = stats.ttest_ind(x_treat, x_ctrl, equal_var=False, nan_policy="omit")
     return {"t": float(res.statistic), "pval": float(res.pvalue)}
 
+def mannwhitney_u(x_treat: pd.Series, x_ctrl: pd.Series) -> Dict[str, float]:
+    """
+    Mann–Whitney U (não-paramétrico) para comparar distribuições.
+    Retorna estatística U e p-valor (bilateral).
+    """
+    xt = x_treat.dropna().astype(float)
+    xc = x_ctrl.dropna().astype(float)
+    if len(xt) == 0 or len(xc) == 0:
+        return {"U": np.nan, "pval": np.nan}
+    U, p = stats.mannwhitneyu(xt, xc, alternative="two-sided")
+    return {"U": float(U), "pval": float(p)}
 
 def ztest_proportions(p1: float, p2: float, n1: int, n2: int) -> Dict[str, float]:
     """
@@ -98,6 +168,20 @@ def run_ab_tests(users_pdf: pd.DataFrame) -> Dict[str, Dict[str, float]]:
 
     return out
 
+def run_nonparam_tests(users_pdf: pd.DataFrame) -> Dict[str, Dict[str, float]]:
+    """
+    Executa Mann–Whitney U para métricas assimétricas:
+      - gmv_user, pedidos_user, aov_user.
+    Retorna dicionário com U e p-valor por métrica.
+    """
+    t = users_pdf[users_pdf["is_target"] == 1]
+    c = users_pdf[users_pdf["is_target"] == 0]
+
+    out: Dict[str, Dict[str, float]] = {}
+    out["gmv_user_mw"] = mannwhitney_u(t["monetary"], c["monetary"])
+    out["pedidos_user_mw"] = mannwhitney_u(t["frequency"], c["frequency"])
+    out["aov_user_mw"] = mannwhitney_u(t["aov_user"], c["aov_user"])
+    return out
 
 # ========== VIABILIDADE ==========
 def financial_viability(
