@@ -258,27 +258,22 @@ Funções de:
 
 #### Métricas de impacto
 
-* **GMV/usuário**: soma do valor de pedidos dividido pelo número de usuários.
-* **Pedidos/usuário**: frequência média de pedidos por usuário.
-* **Conversão**: proporção de usuários com ≥1 pedido no período.
-* **AOV (Average Order Value)**: valor médio por pedido.
-* **CAC (Custo de Aquisição de Cliente)**: custo de cupons dividido por número de usuários que resgataram.
-* **LTV (Lifetime Value)**: receita líquida média por usuário no horizonte do experimento (`GMV/usuário × take rate`).
-* **LTV\:CAC**: razão entre LTV e CAC, avalia sustentabilidade financeira.
-- **Mediana de GMV/usuário, Pedidos/usuário e AOV**: reduz a influência de outliers e representa o “usuário típico” no período.
-- **p95 (GMV/usuário, Pedidos/usuário, AOV)**: ponto abaixo do qual estão 95% dos usuários; útil para reportar resultados robustos sem a cauda extrema.
-- **Heavy users (% com ≥3 pedidos no período)**: indica se a campanha aumentou hábito e recorrência, não apenas compras pontuais.
+* **GMV/usuário (média)**
+* **Pedidos/usuário (média)**
+* **Conversão (proporção de usuários com ≥1 pedido)**
+* **AOV (média do valor dos pedidos)**
 
-**Racional**: Complementar médias com medianas/p95 e a taxa de heavy users torna a análise mais fiel ao comportamento da maioria e mais defensável para stakeholders.
+Além das médias, reportamos também:
+
+* **Mediana de GMV/usuário, Pedidos/usuário e AOV** (reduz outliers)
+* **p95 de GMV/usuário, Pedidos/usuário e AOV** (captura a cauda superior sem extremos)
+* **Heavy users (% com ≥3 pedidos no período)**
 
 #### Testes estatísticos
 
-* **Welch t-test** para comparação de médias (GMV/usuário, pedidos/usuário, AOV).
-* **Z-test para proporções** (conversão). No experimento atual, não aplicável pois todos usuários já tinham ≥1 pedido.
-
-- **Mann–Whitney U (não-paramétrico)** para GMV/usuário, Pedidos/usuário e AOV. Não assume normalidade; compara distribuições (medianas/ordens) e complementa o Welch t-test em dados com long tail.
-
-**Nota**: mantemos o Welch t-test por ser padrão para médias, mas reportamos também o Mann–Whitney para robustez.
+* **Welch t-test** (médias, exploratório)  
+* **Mann–Whitney U** (robusto, apresentado no relatório)  
+* **Z-test de proporções** (para conversão; não aplicável no experimento atual)
 
 #### Premissas financeiras
 
@@ -291,12 +286,21 @@ Funções de:
 
 #### Indicadores financeiros
 
-* **Receita incremental total**: diferença de GMV ajustada pela comissão.
-* **Custo total da campanha**: `n_treated × valor cupom × taxa de resgate`.
-* **ROI absoluto**: receita incremental – custo total.
-* **ROI por usuário**: ROI absoluto dividido pelo nº de usuários tratados.
-* **LTV, CAC e LTV\:CAC** complementam análise de sustentabilidade.
-* Os **KPIs robustos** (**medianas/p95/heavy users**) ajudam a evitar decisões enviesadas por outliers, garantindo que o ROI/LTV:CAC seja interpretado à luz do comportamento da maioria dos usuários.”
+Calculados na função `financial_viability`, a partir de premissas explícitas:
+
+* **ROI absoluto e por usuário**
+* **CAC (Custo de Aquisição de Cliente)**
+* **LTV (Lifetime Value, horizonte do experimento)**
+* **LTV:CAC (sustentabilidade financeira)**
+
+#### Relatório final (executivo)
+
+No relatório, mantemos apenas:
+
+* Métricas robustas (medianas, p95, heavy users)
+* Testes robustos (Mann–Whitney U)
+* ROI, LTV, CAC, LTV:CAC  
+* Premissas financeiras claras (take rate, valor do cupom, taxa de resgate)
 
 ---
 
