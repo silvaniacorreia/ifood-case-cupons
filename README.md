@@ -220,7 +220,7 @@ Funções de:
 Utilitários para:
 - Configuração de SparkSession
 - Carregamento de configurações (YAML)
-- Controle de seeds e benchmarking para shuffle partitions
+- Controle de seeds e benchmarking para shuffle
 
 ### `src/checks.py`
 Funções de validação e pré-checagem:
@@ -235,35 +235,68 @@ Funções de:
 - Testes estatísticos (Welch t-test e z-test)
 - Viabilidade financeira (ROI com premissas)
 
-## Etapa 1 — Análise A/B de Cupons
+## Etapas da Análise
 
-**Objetivo**: medir impacto da campanha de cupons e avaliar viabilidade financeira.
+### 1. Preparação e Limpeza de Dados
 
-### Métricas
-- **GMV/usuário** (`gmv_user`)
-- **Pedidos/usuário** (`pedidos_user`)
-- **Conversão** (`conversao`): % de usuários com ≥1 pedido
-- **AOV** (`aov`): ticket médio por usuário (apenas usuários com pedidos)
+* Leitura de shards e normalização de schemas.
+* Tratamento de nulos e imputação:
 
-### Testes
-- **Welch t-test** para médias (GMV/usuário, Pedidos/usuário, AOV)
-- **Z-test** para proporções (Conversão)
+  * `minimum_order_value_imputed`: mediana por `price_range`.
+  * `delivery_time_imputed`: mediana por `price_range`.
+* Garantia de unicidade de `order_id` (checagem de duplicatas com colunas principais).
 
-### Viabilidade Financeira
-- Receita incremental = *uplift_gmv_user* × N_tratados × *take_rate*
-- Custo = N_tratados × *redemption_rate* × *coupon_cost*
-- ROI = Receita incremental − Custo
+### 2. Checagens Pós-ETL
 
-> Parâmetros em `config/settings.yaml`:
-> - `finance.take_rate` (padrão: 0.23)
-> - `finance.coupon_cost_default` (padrão: 10.0)
+* Faixa de datas (UTC) de `orders_silver`.
+* Distribuição A/B (`users_silver`).
+* Contagem de nulos em colunas-chave.
+* Amostragem de previews para sanity check.
+* Checagem adicional de duplicatas por conteúdo de ordem (mesmo cliente, valor, data).
 
-## 📈 A/B, ROI e Segmentação (no notebook)
+### 3. Análise A/B (Tarefa 1)
 
-- **A/B**: métricas por usuário (**GMV/U, Pedidos/U, Conversão, AOV**), **Welch t-test** (médias) e **z-test** (proporções). Opcional: **CUPED**.  
-- **Viabilidade**: **ROI** e **sensibilidade** (take rate, custo do cupom, cobertura). **Premissas** ficam explícitas no topo da seção.  
-- **Segmentação (RFM)**: regras claras e leitura do **uplift por segmento**, com **ações sugeridas** por público.
-- **Melhorias futuras**: **K-Means** como refinamento da segmentação; **guardrails** adicionais para o novo A/B.
+#### Métricas de impacto
+
+* **GMV/usuário**: soma do valor de pedidos dividido pelo número de usuários.
+* **Pedidos/usuário**: frequência média de pedidos por usuário.
+* **Conversão**: proporção de usuários com ≥1 pedido no período.
+* **AOV (Average Order Value)**: valor médio por pedido.
+* **CAC (Custo de Aquisição de Cliente)**: custo de cupons dividido por número de usuários que resgataram.
+* **LTV (Lifetime Value)**: receita líquida média por usuário no horizonte do experimento (`GMV/usuário × take rate`).
+* **LTV\:CAC**: razão entre LTV e CAC, avalia sustentabilidade financeira.
+- **Mediana de GMV/usuário, Pedidos/usuário e AOV**: reduz a influência de outliers e representa o “usuário típico” no período.
+- **p95 (GMV/usuário, Pedidos/usuário, AOV)**: ponto abaixo do qual estão 95% dos usuários; útil para reportar resultados robustos sem a cauda extrema.
+- **Heavy users (% com ≥3 pedidos no período)**: indica se a campanha aumentou hábito e recorrência, não apenas compras pontuais.
+
+**Racional**: Complementar médias com medianas/p95 e a taxa de heavy users torna a análise mais fiel ao comportamento da maioria e mais defensável para stakeholders.
+
+#### Testes estatísticos
+
+* **Welch t-test** para comparação de médias (GMV/usuário, pedidos/usuário, AOV).
+* **Z-test para proporções** (conversão). No experimento atual, não aplicável pois todos usuários já tinham ≥1 pedido.
+
+- **Mann–Whitney U (não-paramétrico)** para GMV/usuário, Pedidos/usuário e AOV. Não assume normalidade; compara distribuições (medianas/ordens) e complementa o Welch t-test em dados com long tail.
+
+**Nota**: mantemos o Welch t-test por ser padrão para médias, mas reportamos também o Mann–Whitney para robustez.
+
+#### Premissas financeiras
+
+1. **Custo do cupom**: R\$ 10,00, 100% pago pelo iFood (sem coparticipação de restaurantes).
+2. **Take rate (comissão iFood)**: 23%, valor plausível do mercado, usado como referência fixa.
+3. **Taxa de resgate**: cenário base 30%.
+4. **Horizonte temporal**: apenas o período do experimento (jan/2019), LTV calculado nesse intervalo.
+5. **Receita incremental**: `uplift de GMV/usuário × número de usuários tratados × take rate`.
+6. **Custos adicionais**: não considerados (marketing, operação, suporte). Somente custo direto dos cupons.
+
+#### Indicadores financeiros
+
+* **Receita incremental total**: diferença de GMV ajustada pela comissão.
+* **Custo total da campanha**: `n_treated × valor cupom × taxa de resgate`.
+* **ROI absoluto**: receita incremental – custo total.
+* **ROI por usuário**: ROI absoluto dividido pelo nº de usuários tratados.
+* **LTV, CAC e LTV\:CAC** complementam análise de sustentabilidade.
+* Os **KPIs robustos** (**medianas/p95/heavy users**) ajudam a evitar decisões enviesadas por outliers, garantindo que o ROI/LTV:CAC seja interpretado à luz do comportamento da maioria dos usuários.”
 
 ---
 

@@ -39,9 +39,9 @@ class RFMConfig(BaseModel):
     quantiles: list[float] = [0.2, 0.4, 0.6, 0.8]
 
 class FinanceConfig(BaseModel):
-    take_rate: float = 0.15
-    coupon_cost_default: float = 6.0
-    coupon_cost_grid: list[float] = [3, 6, 9, 12, 15]
+    take_rate: float = 0.23
+    coupon_cost_default: float = 10.0
+    coupon_cost_grid: list[float] = [5, 10, 15, 20, 25]
 
 class Settings(BaseModel):
     runtime: RuntimeConfig = RuntimeConfig()
