@@ -31,11 +31,12 @@ ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
 ├─ notebooks/
-│  ├─ pipeline_analise_completa.ipynb  # notebook principal (orquestração da análise)
+│  ├─ pipeline_analise_completa.ipynb # notebook principal (orquestração da análise)
 ├─ src/
 │  ├─ __init__.py
 │  ├─ utils.py                       # settings + spark + seeds
-│  └─ etl.py                         # ingestão + limpeza + joins + silvers
+│  ├─ etl.py                         # ingestão + limpeza + joins + silvers
+│  └─ analysis_ab.py                 # funções de análise A/B
 ├─ scripts/
 │  └─ download_data.py               # baixa .gz/.tar.gz; extrai tar e limpa artefatos
 ├─ config/
@@ -48,7 +49,7 @@ ifood-case-cupons/
 
 ---
 
-## 🧱 Arquitetura & otimizações atuais
+## 🧱 Arquitetura & otimizações
 
 ### ETL otimizado
 1. **Janela de análise antes do join (robusta a outliers)**  
@@ -147,23 +148,6 @@ runtime:
 | `analysis.winsorize`/`use_cuped` | Parâmetros para A/B (aplicados nas análises) |
 | `runtime.spark.conf.*`        | Confs avançadas do Spark (AQE, Kryo, partições, broadcast etc.) |
 
-**Exemplo de `runtime.spark.conf` usado no Colab:**
-```yaml
-runtime:
-  spark:
-    app_name: "ifood-case-cupons"
-    driver_memory: "12g"
-    shuffle_partitions: 32
-    conf:
-      spark.master: "local[*]"
-      spark.sql.adaptive.enabled: "true"
-      spark.sql.adaptive.coalescePartitions.enabled: "true"
-      spark.sql.files.maxPartitionBytes: "64m"
-      spark.serializer: "org.apache.spark.serializer.KryoSerializer"
-      spark.memory.fraction: "0.6"
-      spark.sql.autoBroadcastJoinThreshold: "50MB"
-```
-
 ---
 
 ## 🧱 Decisões técnicas & otimizações de desempenho
@@ -222,6 +206,57 @@ Esses passos mostram maturidade de engenharia e evitam “rodar com tabelas vazi
 - `users_silver`: R/F/M por usuário + `is_target`, com `recency` calculado a partir do último `event_ts_utc`.
 
 ---
+
+## 🗂️ Resumo dos Módulos
+
+### `src/etl.py`
+Funções de:
+- Ingestão de dados brutos (JSON, CSV)
+- Limpeza e conformidade de dados
+- Joins e agregações
+- Normalização de timestamps
+
+### `src/utils.py`
+Utilitários para:
+- Configuração de SparkSession
+- Carregamento de configurações (YAML)
+- Controle de seeds e benchmarking para shuffle partitions
+
+### `src/checks.py`
+Funções de validação e pré-checagem:
+- Validação de arquivos gzip e tar
+- Listagem de CSVs válidos para testes A/B
+- Checagem de formatos de arquivos de pedidos
+
+### `src/analysis_ab.py`
+Funções de:
+- Métricas A/B por grupo (Spark)
+- Coleta de dados por usuário para testes (Pandas)
+- Testes estatísticos (Welch t-test e z-test)
+- Viabilidade financeira (ROI com premissas)
+
+## Etapa 1 — Análise A/B de Cupons
+
+**Objetivo**: medir impacto da campanha de cupons e avaliar viabilidade financeira.
+
+### Métricas
+- **GMV/usuário** (`gmv_user`)
+- **Pedidos/usuário** (`pedidos_user`)
+- **Conversão** (`conversao`): % de usuários com ≥1 pedido
+- **AOV** (`aov`): ticket médio por usuário (apenas usuários com pedidos)
+
+### Testes
+- **Welch t-test** para médias (GMV/usuário, Pedidos/usuário, AOV)
+- **Z-test** para proporções (Conversão)
+
+### Viabilidade Financeira
+- Receita incremental = *uplift_gmv_user* × N_tratados × *take_rate*
+- Custo = N_tratados × *redemption_rate* × *coupon_cost*
+- ROI = Receita incremental − Custo
+
+> Parâmetros em `config/settings.yaml`:
+> - `finance.take_rate` (padrão: 0.23)
+> - `finance.coupon_cost_default` (padrão: 10.0)
 
 ## 📈 A/B, ROI e Segmentação (no notebook)
 
