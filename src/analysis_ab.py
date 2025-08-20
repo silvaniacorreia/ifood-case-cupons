@@ -39,32 +39,18 @@ def collect_user_level_for_tests(
     sample_frac: Optional[float] = None,
     seed: int = 42,
 ) -> pd.DataFrame:
-    """
-    Coleta as colunas necessárias para testes estatísticos em um DataFrame pandas.
-    Retorna colunas:
-      - customer_id, is_target, frequency, monetary
-      - heavy_user, is_new_customer, origin_platform
-      - aov_user (monetary/frequency quando frequency>0)
-      - conv_flag (1 se frequency>0, 0 caso contrário)
-    Parâmetros:
-      - required_cols: validação opcional das colunas esperadas (falha cedo se ausentes).
-      - sample_frac: fração (0–1) para amostrar antes de toPandas() se a base for muito grande.
-    """
     base_cols = [
         "customer_id", "is_target", "frequency", "monetary",
         "heavy_user", "is_new_customer", "origin_platform"
     ]
-    cols = base_cols
-
     existing = set(users_silver.columns)
-    missing = [c for c in cols if c not in existing]
+    missing = [c for c in base_cols if c not in existing]
     if required_cols is not None:
-        missing_req = [c for c in required_cols if c not in existing]
-        missing.extend(missing_req)
+        missing += [c for c in required_cols if c not in existing]
     if missing:
         raise KeyError(f"Colunas ausentes em users_silver: {sorted(set(missing))}")
 
-    df = users_silver.select(*cols)
+    df = users_silver.select(*base_cols)
 
     if sample_frac is not None and 0 < sample_frac < 1:
         df = df.sample(False, sample_frac, seed=seed)
@@ -73,13 +59,15 @@ def collect_user_level_for_tests(
         df
         .withColumn(
             "aov_user",
-            F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
-             .cast(T.DoubleType())
+            F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")).cast(T.DoubleType())
         )
         .withColumn("conv_flag", (F.col("frequency") > 0).cast(T.IntegerType()))
     )
 
-    return df.toPandas()
+    pdf = df.toPandas()
+    ordered = base_cols + ["aov_user","conv_flag"]
+    pdf = pdf[[c for c in ordered if c in pdf.columns]]
+    return pdf
 
 def compute_robust_metrics(
     users_pdf: pd.DataFrame,
