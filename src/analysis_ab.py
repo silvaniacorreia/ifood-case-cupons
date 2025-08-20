@@ -3,7 +3,8 @@ from typing import Dict, Tuple
 import numpy as np
 import pandas as pd
 from scipy import stats
-from pyspark.sql import DataFrame, functions as F
+from pyspark.sql import DataFrame, functions as F, types as T
+from typing import Iterable, Optional
 
 # ========== MÉTRICAS ==========
 def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
@@ -31,20 +32,54 @@ def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
         .orderBy("is_target")
     )
 
-def collect_user_level_for_tests(users_silver: DataFrame) -> pd.DataFrame:
+def collect_user_level_for_tests(
+    users_silver: DataFrame,
+    *,
+    required_cols: Optional[Iterable[str]] = None,
+    sample_frac: Optional[float] = None,
+    seed: int = 42,
+) -> pd.DataFrame:
     """
-    Coleta as colunas necessárias para testes estatísticos em um DataFrame pandas:
-      - is_target, frequency, monetary, aov_user (freq>0)
-      - conv_flag (1 se freq>0, 0 caso contrário)
+    Coleta as colunas necessárias para testes estatísticos em um DataFrame pandas.
+    Retorna colunas:
+      - customer_id, is_target, frequency, monetary
+      - heavy_user, is_new_customer, origin_platform
+      - aov_user (monetary/frequency quando frequency>0)
+      - conv_flag (1 se frequency>0, 0 caso contrário)
+    Parâmetros:
+      - required_cols: validação opcional das colunas esperadas (falha cedo se ausentes).
+      - sample_frac: fração (0–1) para amostrar antes de toPandas() se a base for muito grande.
     """
-    pdf = (
-        users_silver
-        .select("is_target", "frequency", "monetary")
-        .withColumn("aov_user", F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")))
-        .withColumn("conv_flag", (F.col("frequency") > 0).cast("int"))
-        .toPandas()
+    base_cols = [
+        "customer_id", "is_target", "frequency", "monetary",
+        "heavy_user", "is_new_customer", "origin_platform"
+    ]
+    cols = base_cols
+
+    existing = set(users_silver.columns)
+    missing = [c for c in cols if c not in existing]
+    if required_cols is not None:
+        missing_req = [c for c in required_cols if c not in existing]
+        missing.extend(missing_req)
+    if missing:
+        raise KeyError(f"Colunas ausentes em users_silver: {sorted(set(missing))}")
+
+    df = users_silver.select(*cols)
+
+    if sample_frac is not None and 0 < sample_frac < 1:
+        df = df.sample(False, sample_frac, seed=seed)
+
+    df = (
+        df
+        .withColumn(
+            "aov_user",
+            F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
+             .cast(T.DoubleType())
+        )
+        .withColumn("conv_flag", (F.col("frequency") > 0).cast(T.IntegerType()))
     )
-    return pdf
+
+    return df.toPandas()
 
 def compute_robust_metrics(
     users_pdf: pd.DataFrame,
