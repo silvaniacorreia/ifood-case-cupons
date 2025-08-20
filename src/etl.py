@@ -80,6 +80,15 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
         else:
             orders = spark.read.json(orders_path)
 
+        # Gravamos shards para leituras subsequentes (evita reler o .gz grande)
+        try:
+            if not orders_sharded.exists():
+                print("[ETL] Salvando shards de orders em:", orders_sharded)
+                num_parts = int(spark.conf.get("spark.sql.shuffle.partitions", "64"))
+                orders.repartition(num_parts).write.mode("overwrite").json(str(orders_sharded))
+        except Exception as e:
+            print("[ETL] aviso: não foi possível salvar shards:", e)
+
     consumers = (
         spark.read
         .option("header", True)

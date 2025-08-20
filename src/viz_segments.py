@@ -8,7 +8,10 @@ def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
 def to_pandas_spark(df_spark) -> pd.DataFrame:
-    return df_spark.toPandas()
+    # aceitamos Spark DataFrame pequeno ou pandas
+    if hasattr(df_spark, "toPandas") and not isinstance(df_spark, pd.DataFrame):
+        return df_spark.toPandas()
+    return df_spark
 
 def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
     ensure_dir(outdir)
@@ -17,7 +20,7 @@ def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
     return p
 
 def plot_bars_by_segment(
-    df: pd.DataFrame,
+    df_or_spark: pd.DataFrame,
     segment_col: str,
     value_cols: List[str],
     group_col: str = "is_target",
@@ -25,6 +28,7 @@ def plot_bars_by_segment(
     outdir: Optional[str] = None,
     fname: Optional[str] = None,
 ):
+    df = to_pandas_spark(df_or_spark)
     segs = sorted(df[segment_col].astype(str).unique().tolist())
     groups = sorted(df[group_col].astype(int).unique().tolist())  # [0, 1]
 
