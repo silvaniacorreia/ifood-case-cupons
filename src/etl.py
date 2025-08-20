@@ -398,8 +398,7 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
     Cria colunas derivadas para facilitar a análise, sem alterar as originais:
       - origin_platform_clean  : preenche nulos com 'unknown'
       - language_clean / active_clean : categorias para cortes sem perder linhas
-      - minimum_order_value_imputed / delivery_time_imputed : imputação por mediana
-        (1) por (merchant_city, price_range) e fallback (2) por price_range
+      - minimum_order_value_imputed / delivery_time_imputed : imputação por média em nível de price_range
 
     OBS: as colunas originais permanecem intactas para auditoria.
     """
@@ -453,7 +452,7 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
 
     return base
 
-def build_user_aggregates(df_orders_silver: DataFrame) -> DataFrame:
+def build_user_aggregates(df_orders_silver: DataFrame, start_utc: str, end_utc: str) -> DataFrame:
     """
     Agregações por usuário para RFM e A/B.
     - last_order: UTC do último evento
@@ -465,9 +464,19 @@ def build_user_aggregates(df_orders_silver: DataFrame) -> DataFrame:
         df_orders_silver.groupBy("customer_id")
         .agg(
             F.max("event_ts_utc").alias("last_order"),
-            F.count("*").alias("frequency"),
-            F.sum("order_total_amount").alias("monetary"),
-            F.first("is_target").alias("is_target"),
+        F.count("*").alias("frequency"),
+        F.sum("order_total_amount").alias("monetary"),
+        F.first("is_target", ignorenulls=True).alias("is_target"),
+        F.min("consumer_created_at").alias("consumer_created_at"),  
+        F.last("origin_platform", ignorenulls=True).alias("origin_platform"),
+        F.first("active", ignorenulls=True).alias("active")  
         )
+        .withColumn("recency", F.datediff(end_utc.cast("timestamp"), F.col("last_order")))
+        .withColumn(
+            "is_new_customer",
+            (F.col("consumer_created_at").cast("timestamp") >= start_utc.cast("timestamp")) &
+            (F.col("consumer_created_at").cast("timestamp") <  end_utc.cast("timestamp"))
+        )
+        .withColumn("heavy_user", (F.col("frequency") >= F.lit(3)))
     )
     return agg
