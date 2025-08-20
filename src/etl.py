@@ -452,31 +452,64 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
 
     return base
 
-def build_user_aggregates(df_orders_silver: DataFrame, start_utc: str, end_utc: str) -> DataFrame:
+def build_user_aggregates(
+    df_orders_silver: DataFrame,
+    start_utc: str | None,
+    end_utc: str | None
+) -> DataFrame:
     """
     Agregações por usuário para RFM e A/B.
     - last_order: UTC do último evento
     - frequency: nº pedidos
     - monetary: soma de valor
     - is_target: flag do experimento (primeira ocorrência)
+    - recency: dias entre end_utc e last_order
+    - is_new_customer: consumidor criado dentro da janela [start_utc, end_utc)
+    - heavy_user: frequência >= 3
     """
+
+    if start_utc is None or end_utc is None:
+        mm = df_orders_silver.agg(
+            F.min("event_ts_utc").alias("min_ts"),
+            F.max("event_ts_utc").alias("max_ts")
+        ).first()
+        if start_utc is None and mm and mm["min_ts"]:
+            start_utc = mm["min_ts"].date().isoformat()
+        if end_utc is None and mm and mm["max_ts"]:
+            end_utc = (mm["max_ts"].date() + F.expr("INTERVAL 1 DAY")).cast("string")  
+            end_utc = (mm["max_ts"].date() + __import__("datetime").timedelta(days=1)).isoformat()
+
+    start_ts_col = F.to_timestamp(F.lit(start_utc)) if start_utc else None
+    end_ts_col   = F.to_timestamp(F.lit(end_utc))   if end_utc   else None
+
     agg = (
         df_orders_silver.groupBy("customer_id")
         .agg(
             F.max("event_ts_utc").alias("last_order"),
-        F.count("*").alias("frequency"),
-        F.sum("order_total_amount").alias("monetary"),
-        F.first("is_target", ignorenulls=True).alias("is_target"),
-        F.min("consumer_created_at").alias("consumer_created_at"),  
-        F.last("origin_platform", ignorenulls=True).alias("origin_platform"),
-        F.first("active", ignorenulls=True).alias("active")  
+            F.count("*").alias("frequency"),
+            F.sum("order_total_amount").alias("monetary"),
+            F.first("is_target", ignorenulls=True).alias("is_target"),
+            F.min("consumer_created_at").alias("consumer_created_at"),
+            F.last("origin_platform", ignorenulls=True).alias("origin_platform"),
+            F.first("active", ignorenulls=True).alias("active"),
         )
-        .withColumn("recency", F.datediff(end_utc.cast("timestamp"), F.col("last_order")))
-        .withColumn(
-            "is_new_customer",
-            (F.col("consumer_created_at").cast("timestamp") >= start_utc.cast("timestamp")) &
-            (F.col("consumer_created_at").cast("timestamp") <  end_utc.cast("timestamp"))
-        )
-        .withColumn("heavy_user", (F.col("frequency") >= F.lit(3)))
     )
+
+    if end_ts_col is not None:
+        agg = agg.withColumn("recency", F.datediff(end_ts_col, F.col("last_order")))
+    else:
+        max_last = agg.agg(F.max("last_order").alias("max_last")).first()["max_last"]
+        agg = agg.withColumn("recency", F.datediff(F.lit(max_last), F.col("last_order")))
+
+    if start_ts_col is not None and end_ts_col is not None:
+        agg = agg.withColumn(
+            "is_new_customer",
+            (F.col("consumer_created_at").cast("timestamp") >= start_ts_col) &
+            (F.col("consumer_created_at").cast("timestamp") <  end_ts_col)
+        )
+    else:
+        agg = agg.withColumn("is_new_customer", F.lit(False))
+
+    agg = agg.withColumn("heavy_user", (F.col("frequency") >= F.lit(3)))
+
     return agg
