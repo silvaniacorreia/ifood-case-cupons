@@ -25,8 +25,17 @@ def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
     return outp
 
 # ---------- gráficos de distribuição / box ----------
+def to_pandas_safe(df):
+    try:
+        # Spark DataFrame
+        if hasattr(df, "toPandas") and not isinstance(df, pd.DataFrame):
+            return df.toPandas()
+    except Exception:
+        pass
+    return df
+
 def plot_ab_box(
-    users_pdf: pd.DataFrame,
+    users_pdf_or_spark,
     metric_col: str,
     *,
     outdir: str,
@@ -35,7 +44,7 @@ def plot_ab_box(
     y_log: bool = False,
     title: Optional[str] = None,
 ):
-    df = users_pdf.copy()
+    df = to_pandas_safe(users_pdf_or_spark).copy()
     df = df[["is_target", metric_col]].dropna()
     df["is_target"] = df["is_target"].astype(int)
 

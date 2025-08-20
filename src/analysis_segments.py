@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from pyspark.sql import DataFrame, functions as F
+from pyspark.sql import types as T
 from scipy import stats
 
 from src.analysis_ab import financial_viability
@@ -109,6 +110,9 @@ def nonparam_tests_by_segment(
       - monetary (gmv_user), frequency (pedidos_user), aov_user
     Retorna: {segment_value: {metric: {U, pval}}}
     """
+    if segment_col not in users_pdf.columns:
+        raise KeyError(f"[robust_metrics_by_segment] coluna de segmento '{segment_col}' não está em users_pdf. "
+                       f"Colunas disponíveis: {list(users_pdf.columns)}")
     out: Dict[str, Dict[str, Dict[str, float]]] = {}
     for seg_val, g in users_pdf.groupby(segment_col):
         t = g[g["is_target"] == 1]
@@ -124,36 +128,75 @@ def nonparam_tests_by_segment(
 # -----------------------------
 # 4) Métricas robustas por segmento (Pandas)
 # -----------------------------
-def robust_metrics_by_segment(
-    users_pdf: pd.DataFrame,
-    *,
-    segment_col: str,
-    heavy_threshold: int = 3
-) -> pd.DataFrame:
+def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int = 3):
     """
-    Calcula medianas, p95 e taxa de heavy users por segmento e grupo A/B.
-    Retorna DataFrame pandas com linhas por (segment, is_target).
-    """
-    rows = []
-    for (seg, tgt), g in users_pdf.groupby([segment_col, "is_target"]):
-        gmv = pd.to_numeric(g["monetary"], errors="coerce")
-        freq = pd.to_numeric(g["frequency"], errors="coerce")
-        aov  = pd.to_numeric(g["aov_user"], errors="coerce")
+    Versão que aceita tanto pandas DataFrame quanto Spark DataFrame.
 
-        rows.append({
-            "segment": seg,
-            "is_target": int(tgt),
-            "usuarios": int(len(g)),
-            "median_gmv_user": float(gmv.median()),
-            "median_pedidos_user": float(freq.median()),
-            "median_aov_user": float(aov.median()),
-            "p95_gmv_user": float(np.nanpercentile(gmv.dropna(), 95)) if gmv.notna().any() else np.nan,
-            "p95_pedidos_user": float(np.nanpercentile(freq.dropna(), 95)) if freq.notna().any() else np.nan,
-            "p95_aov_user": float(np.nanpercentile(aov.dropna(), 95)) if aov.notna().any() else np.nan,
-            "heavy_users_rate": float((freq >= heavy_threshold).mean()) if len(freq) else np.nan,
-            "heavy_threshold": heavy_threshold
-        })
-    return pd.DataFrame(rows).sort_values(["segment","is_target"])
+    Se `users` for um DataFrame Spark: calcula medianas, p95 e heavy_users por (segment, is_target)
+    usando `percentile_approx` e retorna um DataFrame pandas (pequeno) pronto para salvar/plot.
+
+    Se `users` for pandas: mantém o comportamento anterior.
+    """
+    # Detecta Spark DataFrame
+    try:
+        from pyspark.sql import DataFrame as SparkDF
+        is_spark = isinstance(users, SparkDF)
+    except Exception:
+        is_spark = False
+
+    if is_spark:
+        df_spark = users
+        # garante colunas necessárias
+        required = [segment_col, "is_target", "customer_id", "monetary", "frequency"]
+        missing = [c for c in required if c not in df_spark.columns]
+        if missing:
+            raise KeyError(f"Colunas faltando para robust_metrics_by_segment (Spark): {missing}")
+
+        aov_expr = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")).cast(T.DoubleType())
+        df_proc = df_spark.select(segment_col, "is_target", "customer_id", "monetary", "frequency")
+        df_proc = df_proc.withColumn("aov_user", aov_expr)
+
+        agg = (
+            df_proc.groupBy(F.col(segment_col).alias("segment"), F.col("is_target"))
+            .agg(
+                F.countDistinct("customer_id").alias("usuarios"),
+                F.expr("percentile_approx(monetary, 0.5)").alias("median_gmv_user"),
+                F.expr("percentile_approx(frequency, 0.5)").alias("median_pedidos_user"),
+                F.expr("percentile_approx(aov_user, 0.5)").alias("median_aov_user"),
+                F.expr("percentile_approx(monetary, 0.95)").alias("p95_gmv_user"),
+                F.expr("percentile_approx(frequency, 0.95)").alias("p95_pedidos_user"),
+                F.expr("percentile_approx(aov_user, 0.95)").alias("p95_aov_user"),
+                (F.sum((F.coalesce(F.col("frequency"), F.lit(0)) >= heavy_threshold).cast("int")) / F.count("customer_id")).alias("heavy_users_rate"),
+                F.lit(heavy_threshold).alias("heavy_threshold")
+            )
+        )
+        # converte para pandas (pequeno) para escrita/plot
+        pdf = agg.orderBy("segment", "is_target").toPandas()
+        return pdf
+
+    else:
+        # pandas path: preserva implementação anterior
+        users_pdf = users
+        rows = []
+        for (seg, tgt), g in users_pdf.groupby([segment_col, "is_target"]):
+            gmv = pd.to_numeric(g["monetary"], errors="coerce")
+            freq = pd.to_numeric(g["frequency"], errors="coerce")
+            aov  = pd.to_numeric(g["aov_user"], errors="coerce")
+
+            rows.append({
+                "segment": seg,
+                "is_target": int(tgt),
+                "usuarios": int(len(g)),
+                "median_gmv_user": float(gmv.median()),
+                "median_pedidos_user": float(freq.median()),
+                "median_aov_user": float(aov.median()),
+                "p95_gmv_user": float(np.nanpercentile(gmv.dropna(), 95)) if gmv.notna().any() else np.nan,
+                "p95_pedidos_user": float(np.nanpercentile(freq.dropna(), 95)) if freq.notna().any() else np.nan,
+                "p95_aov_user": float(np.nanpercentile(aov.dropna(), 95)) if aov.notna().any() else np.nan,
+                "heavy_users_rate": float((freq >= heavy_threshold).mean()) if len(freq) else np.nan,
+                "heavy_threshold": heavy_threshold
+            })
+        return pd.DataFrame(rows).sort_values(["segment","is_target"])
 
 def finance_by_segment(
     users_pdf: pd.DataFrame,

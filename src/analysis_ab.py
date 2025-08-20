@@ -36,9 +36,14 @@ def collect_user_level_for_tests(
     users_silver: DataFrame,
     *,
     required_cols: Optional[Iterable[str]] = None,
-    sample_frac: Optional[float] = None,
+    sample_frac: Optional[float] = 0.25,
     seed: int = 42,
 ) -> pd.DataFrame:
+    """
+    Coleta as colunas necessárias para testes estatísticos em um DataFrame pandas.
+    Se `sample_frac` for fornecido (0<sample_frac<1) a amostragem é feita no Spark antes do toPandas,
+    reduzindo o volume transferido para o driver.
+    """
     base_cols = [
         "customer_id", "is_target", "frequency", "monetary",
         "heavy_user", "is_new_customer", "origin_platform"
@@ -53,6 +58,11 @@ def collect_user_level_for_tests(
     df = users_silver.select(*base_cols)
 
     if sample_frac is not None and 0 < sample_frac < 1:
+        # Habilita Arrow para acelerar a conversão quando disponível
+        try:
+            users_silver.sparkSession.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
+        except Exception:
+            pass
         df = df.sample(False, sample_frac, seed=seed)
 
     df = (
@@ -64,10 +74,42 @@ def collect_user_level_for_tests(
         .withColumn("conv_flag", (F.col("frequency") > 0).cast(T.IntegerType()))
     )
 
-    pdf = df.toPandas()
+    # Transferir apenas as colunas necessárias para pandas
+    pdf = df.select(*([c for c in base_cols if c in df.columns] + ["aov_user", "conv_flag"]))
+    pdf = pdf.toPandas()
     ordered = base_cols + ["aov_user","conv_flag"]
     pdf = pdf[[c for c in ordered if c in pdf.columns]]
     return pdf
+
+
+# Spark-first: calcula métricas robustas no Spark usando percentile_approx
+def compute_robust_metrics_spark(users_silver: DataFrame, *, heavy_threshold: int = 3) -> DataFrame:
+    """
+    Calcula métricas robustas por grupo (controle vs tratamento) usando funções Spark:
+      - medianas (percentile_approx 0.5)
+      - p95 (percentile_approx 0.95)
+      - heavy users rate (freq >= threshold)
+
+    Retorna DataFrame Spark com uma linha por is_target.
+    """
+    aov_expr = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")).cast(T.DoubleType())
+    df = users_silver.select("customer_id", "is_target", "monetary", "frequency").withColumn("aov_user", aov_expr)
+
+    agg = (
+        df.groupBy("is_target")
+        .agg(
+            F.countDistinct("customer_id").alias("usuarios"),
+            F.expr("percentile_approx(monetary, 0.5)").alias("median_gmv_user"),
+            F.expr("percentile_approx(frequency, 0.5)").alias("median_pedidos_user"),
+            F.expr("percentile_approx(aov_user, 0.5)").alias("median_aov_user"),
+            F.expr("percentile_approx(monetary, 0.95)").alias("p95_gmv_user"),
+            F.expr("percentile_approx(frequency, 0.95)").alias("p95_pedidos_user"),
+            F.expr("percentile_approx(aov_user, 0.95)").alias("p95_aov_user"),
+            (F.sum((F.coalesce(F.col("frequency"), F.lit(0)) >= heavy_threshold).cast("int")) / F.count("customer_id")).alias("heavy_users_rate"),
+            F.lit(heavy_threshold).alias("heavy_threshold")
+        )
+    )
+    return agg.orderBy("is_target")
 
 def compute_robust_metrics(
     users_pdf: pd.DataFrame,
