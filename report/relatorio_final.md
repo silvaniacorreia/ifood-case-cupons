@@ -9,12 +9,35 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 ## 2. Principais Resultados da Campanha
 
 ### 2.1 Engajamento e Vendas
+
+**Tabela 1 – Sumário robusto por grupo (medianas, p95 e heavy users).**  
+_Fonte: `report/tables/ab_summary_robusto.csv`_
+
+| is_target | usuários | mediana GMV | mediana pedidos | mediana AOV | p95 GMV | p95 pedidos | p95 AOV | % heavy (≥3) |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | … | … | … | … | … | … | … | … |
+| 1 | … | … | … | … | … | … | … | … |
+
 - **Pedidos por usuário**: aumento de **+13%** no grupo que recebeu o cupom.  
 - **GMV por usuário (valor gasto no app)**: crescimento de **+13%**.  
 - **Ticket médio (AOV)**: permaneceu estável, em torno de R\$48 por pedido.  
 - **Heavy users (≥3 pedidos no período)**: cresceram de 31% para 37% com o cupom.  
 
-📊 *Sugestão de gráfico: barras comparando pedidos/usuário e GMV/usuário entre grupos.*  
+**Figura 1 – Médias por grupo (GMV, Pedidos, AOV).**  
+![Médias por grupo](assets/ab/barras_medias.png)
+
+**Figura 2 – Distribuição de pedidos por usuário (controle vs tratamento).**  
+![Distribuição de pedidos](assets/ab/hist_freq.png)
+
+**Figura 3 – Boxplots (robustos a outliers) por grupo.**  
+a) GMV por usuário  
+![Box GMV](assets/ab/box_gmv.png)  
+
+b) Pedidos por usuário  
+![Box Pedidos](assets/ab/box_freq.png)  
+
+c) AOV por usuário  
+![Box AOV](assets/ab/box_aov.png)     
 
 **Interpretação:**  
 O cupom não aumentou o valor de cada pedido, mas levou os usuários a **pedirem com mais frequência**, elevando o gasto total.  
@@ -28,7 +51,6 @@ Premissas adotadas:
 - Taxa de uso do cupom: **30%**.  
 - Comissão média do iFood (take rate): **23%** sobre o valor dos pedidos.  
 
-Resultados:
 - **Receita incremental total (comissões adicionais):** R\$1,74 milhão.  
 - **Custo dos cupons concedidos:** R\$1,33 milhão.  
 - **ROI líquido:** +R\$416 mil.  
@@ -37,7 +59,21 @@ Resultados:
 - **CAC (custo de aquisição via cupom):** R\$10.  
 - **Relação LTV/CAC:** 3,5 → saudável.  
 
-📊 *Sugestão de gráfico: barras comparando Receita incremental vs Custo dos cupons.*  
+**Figura 4 – Receita incremental vs custo dos cupons.**  
+![ROI da campanha](assets/ab/roi_barras.png)
+
+**Tabela 2 – Indicadores financeiros (base).**  
+_Fonte: `report/tables/ab_finance.csv`_
+
+| Métrica | Valor |
+|---|---|
+| Receita incremental total | … |
+| Custo total dos cupons | … |
+| ROI absoluto | … |
+| ROI por usuário | … |
+| LTV | … |
+| CAC | … |
+| LTV/CAC | … |
 
 **Nota sobre o LTV:**  
 O cálculo do LTV (Lifetime Value) é normalmente utilizado em horizontes mais longos, acompanhando a evolução do cliente ao longo de vários meses ou anos. No nosso caso, os dados disponíveis cobrem apenas o período do experimento, de modo que o LTV foi aqui estimado a partir desse intervalo restrito.  
