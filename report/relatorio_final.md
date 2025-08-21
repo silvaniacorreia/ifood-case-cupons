@@ -1,4 +1,4 @@
-# Relatório Final – Impacto da Campanha de Cupons
+# Relatório Final – Case iFood: Teste A/B de Cupons
 
 ## 1. Contexto
 O iFood testou uma campanha de cupons com um grupo de usuários selecionados (grupo teste), enquanto outro grupo similar não recebeu o benefício (grupo controle).  
@@ -8,6 +8,8 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 - **Mediana:** valor típico por cliente (menos sensível a casos extremos).
 - **p95:** nível alto esperado (apenas ~5% dos clientes ficam acima disso).
 - **Heavy users (≥3):** parcela de clientes frequentes.
+- **Tratamento:** grupo que recebeu o cupom.
+- **Controle:** grupo que não recebeu o cupom.
 ---
 
 ## 2. Principais Resultados da Campanha
@@ -144,38 +146,62 @@ Com essa abordagem, será possível avaliar se os cupons funcionam não apenas c
   - *Racional*: permite distinguir desde “recente-pouco-baixo ticket” (ex.: 111) até “recente-muito-alto ticket” (ex.: 555) para graduar o incentivo.
 - **Novo vs recorrente:** sinalizamos **novo** quando disponível, porém, na base utilizada, o volume de “novo” é residual (amostra focada em quem já comprou). Mantemos como **exploratório** até incorporar usuários que ainda não pediram (para medir 1ª compra de fato).
 
-**Inserir figuras de referência (médias para visão geral e box/hist para forma da distribuição):**  
-- **Barras – médias por segmento:**  
-  - [INSERIR FIGURA: `outputs/figs_segments/bars_heavy.png`]  
-  - [INSERIR FIGURA: `outputs/figs_segments/bars_new.png`]  
-  - [INSERIR FIGURA: `outputs/figs_segments/bars_platform.png`]
-
-- **Boxplots – heavy_user (com e sem winsor 1%):**  
-  - [INSERIR FIGURA: `outputs/figs_segments/box_heavy.png`]  
-  - [INSERIR FIGURA: `outputs/figs_segments/box_heavy_w.png`]
-- **Histogramas – por segmento (exploratório):**  
-  - [INSERIR FIGURA: `outputs/figs_segments/hist_new.png`]  
-  - [INSERIR FIGURA: `outputs/figs_segments/hist_platform.png`]
-
 ---
 
 ### 3.2. Resultados do A/B por segmento e recomendações
 
 **1) Frequência (Heavy vs Não-heavy)**  
 
-**Tabela 3 – Medianas por segmento (Heavy vs Não-heavy)**
 
-| Segmento   | Usuários (Trat.) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos |
-|---|---:|---:|---:|---:|---:|
-| Não-heavy  | 34.929 | 47,00 → 50,00 | **+3,00** | 1 → 1 | 0 |
-| Heavy      | 20.439 | 205,60 → 208,20 | **+2,60** | 5 → 5 | 0 |
-  - **Não-heavy**: ganho claro em **GMV/usuário e pedidos/usuário** com o cupom; AOV estável.  
-  - **Heavy**: efeito marginal (quase nulo) dentro do grupo.  
-  - O grupo tratado tem **mais heavy users** (~37% vs ~31%), o que também puxa a média geral para cima (efeito de composição).
-- **Ações sugeridas:**  
-  - **Direcionar** o cupom em **não-heavy** (1–2 pedidos) para conduzir ao 2º→3º pedido.  
-  - **Reduzir frequência/valor** do cupom para **heavy** (≥ 3) para evitar canibalização.
-- **KPI alvo:** aumento da **taxa de heavy users** (≥ 3) e do **GMV mediano** entre não-heavy, com AOV estável.
+**Tabela 3 – Medianas por segmento (Heavy vs Não-heavy) + métricas financeiras**
+
+| Segmento   | Usuários (Trat., amostra) | Usuários (Trat., base) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos | AOV mediano (Ctrl → Trat) | Δ AOV | Receita inc. total (R$) | Custo total (R$) | Lucro inc. total (R$) | Lucro por usuário (R$) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Não-heavy  | 34.929 | 279.181 | 47,00 → 50,00 | **+3,00** | 1 → 1 | 0 | 40,09 → 40,45 | **+0,37** | 200.754 | 837.543 | **-636.789** | **-2,28** |
+| Heavy      | 20.439 | 163.495 | 205,60 → 208,20 | **+2,60** | 5 → 5 | 0 | 42,30 → 42,30 | **+0,00** | 33.120 | 490.485 | **-457.365** | **-2,80** |
+
+> **Notas:**  
+> • As **medianas** (GMV/pedidos/AOV) foram calculadas sobre **amostra**; os “Usuários (Trat., amostra)” refletem o tamanho coletado.  
+> • As **métricas financeiras** (receita, custo, lucro, lucro por usuário) foram calculadas **sobre 100% da base** por segmento; por isso mostramos também “Usuários (Trat., base)”.
+
+
+
+**Figura 4 - Mediana GMV/AOV/Pedidos por usuário (Heavy vs Não-heavy)**
+
+a) GMV por usuário
+![Bars GMV](assets/segments/bars_heavy_medianas_gmv_user.png)  
+b) AOV por usuário
+![Bars AOV](assets/segments/bars_heavy_medianas_aov.png)  
+c) Pedidos por usuário
+![Bars Pedidos](assets/segments/bars_heavy_medianas_pedidos_user.png)
+
+O cupom **não altera de forma relevante o comportamento típico** (medianas) dentro de cada grupo:
+- **Não-heavy**: GMV/usuário mediano sobe **+R\$3,00** (47,0 → 50,0), com **pedidos medianos estáveis** (1 → 1) e **AOV praticamente estável** (+R\$0,37).
+- **Heavy (≥3)**: **efeito marginal** em GMV mediano (**+R\$2,60**; 205,6 → 208,2); **pedidos medianos estáveis** (5 → 5) e **AOV estável**.
+
+* **Composição importa** 
+O grupo Tratamento tem **mais heavy** (**~37%** vs **~31%** no Controle, +6 p.p.). Essa diferença de mix **eleva as médias globais** do tratado mesmo quando as **medianas por grupo mudam pouco**. 
+
+* **Implicações financeiras** 
+Com as premissas atuais (23% de take rate, cupom R\$10, resgate 30%), o **lucro incremental por usuário** é **negativo** em ambos:
+- **Não-heavy:** **−R\$2,28/usuário** (total −R\$636,8 mil).  
+- **Heavy:** **−R\$2,80/usuário** (total −R\$457,4 mil).  
+→ Sinal de **canibalização**/ineficiência com o **valor** e/ou **gatilho** atuais quando olhamos só por frequência.
+
+
+- O cupom **não move a mediana de pedidos** (1 → 1 em não-heavy; 5 → 5 em heavy); o ganho que existe acontece **fora do centro** (cauda), insuficiente para pagar o custo em cada grupo isolado.
+- Como a **composição** do Tratamento tem mais heavy, o agregado pode parecer melhor, mas a **política por frequência pura** (heavy vs não-heavy) **não se paga** com o desenho atual.
+
+**Ações sugeridas:**
+1. **Não-heavy (1–2 pedidos):** manter cupom **direcionado**, mas com **gatilho de progressão** (ex.: após o 1º pedido, ou após X dias sem compra) para empurrar ao **3º pedido**.  
+2. **Heavy (≥3):** **reduzir valor/frequência** do cupom (ou condicionar a novos comportamentos, p.ex., categorias menos frequentes), **evitando canibalização**.
+3. **Rebalancear a composição** em próximos testes: usar **randomização estratificada por heavy** ou **reponderar** o resultado global para o mix do Controle, deixando o efeito mais comparável.
+
+**KPIs a acompanhar nesta linha:**
+- **% de heavy users (≥3)** no período (progressão de frequência).  
+- **GMV mediano por usuário** em **não-heavy**.  
+- **Lucro incremental por usuário** por grupo (objetivo: ≥ 0 sob as premissas vigentes).  
+
 
 **2) Plataforma (Android / iOS / Desktop)**  
 
@@ -183,10 +209,23 @@ Com essa abordagem, será possível avaliar se os cupons funcionam não apenas c
 
 | Plataforma | Usuários (Trat.) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos |
 |---|---:|---:|---:|---:|---:|
-| Android | 23.632 | 59,00 → 69,80 | **+10,80** | 1 → 2 | **+1** |
+| Android | 23.632	 | 59,00 → 69,80 | **+10,80** | 1 → 2 | **+1** |
 | Desktop | 7.939  | 63,20 → 73,60 | **+10,40** | 1 → 2 | **+1** |
-| iOS     | 23.336 | 77,80 → 94,00 | **+16,20** | 1 → 2 | **+1** |
+| iOS     | 23.336	 | 77,80 → 94,00 | **+16,20** | 2 → 2 | **+0** |
 
+**Figura 5 - Mediana GMV/AOV/Pedidos por usuário (Plataforma)**
+
+a) GMV por usuário
+![Bars GMV](assets/segments/bars_platform_medianas_gmv_user.png)
+
+b) AOV por usuário
+![Bars AOV](assets/segments/bars_platform_medianas_aov.png)
+
+c) Pedidos por usuário
+![Bars Pedidos](assets/segments/bars_platform_medianas_pedidos_user.png)
+
+**Figura 6 - Heavy Users por Plataforma**
+![Bars Heavy Users](assets/segments/bars_platform_heavy_rate.png)
 
   - **Desktop** e **iOS** respondem melhor (maior ganho por usuário); **Android** responde, mas com retorno menor.  
   - Em mediana, Android e Desktop avançam de **1→2 pedidos**; iOS aumenta GMV mediano.
