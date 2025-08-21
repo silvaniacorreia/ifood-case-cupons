@@ -199,20 +199,55 @@ def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int =
         return pd.DataFrame(rows).sort_values(["segment","is_target"])
 
 def finance_by_segment(
-    users_pdf: pd.DataFrame,
+    users_silver,
     *,
     segment_col: str,
-    take_rate: float = 0.23,
-    coupon_cost: float = 10.0,
-    redemption_rate: float = 0.30
-) -> Dict[str, Dict[str, float]]:
+    take_rate: float,
+    coupon_cost: float,
+    redemption_rate: float,
+    id_col: str = "customer_id",
+    group_col: str = "is_target",
+    monetary_col: str = "monetary",
+):
     """
-    Calcula viabilidade financeira por segmento reaproveitando financial_viability.
-    Retorna: {segment_value: {... métricas financeiras ...}}
+    Financeiro por segmento em Spark (100% dos dados).
+    Retorna dict {segmento: {...}} com totais e ROI por usuário.
     """
-    out: Dict[str, Dict[str, float]] = {}
-    for seg_val, g in users_pdf.groupby(segment_col):
-        out[str(seg_val)] = financial_viability(
-            g, take_rate=take_rate, coupon_cost=coupon_cost, redemption_rate=redemption_rate
-        )
+    ab = (users_silver
+          .groupBy(segment_col, group_col)
+          .agg(F.countDistinct(id_col).alias("usuarios"),
+               F.avg(monetary_col).alias("gmv_user")))
+
+    ctrl = (ab.filter(F.col(group_col)==0)
+              .select(segment_col, F.col("usuarios").alias("usuarios_ctrl"),
+                      F.col("gmv_user").alias("gmv_ctrl")))
+    trat = (ab.filter(F.col(group_col)==1)
+              .select(segment_col, F.col("usuarios").alias("usuarios_trat"),
+                      F.col("gmv_user").alias("gmv_trat")))
+
+    joined = (trat.join(ctrl, on=segment_col, how="inner")
+                   .withColumn("uplift", F.col("gmv_trat") - F.col("gmv_ctrl"))
+                   .withColumn("receita", F.lit(take_rate) * F.col("uplift") * F.col("usuarios_trat"))
+                   .withColumn("custo", F.lit(coupon_cost) * F.lit(redemption_rate) * F.col("usuarios_trat"))
+                   .withColumn("lucro", F.col("receita") - F.col("custo"))
+                   .withColumn("roi_por_usuario", F.when(F.col("usuarios_trat")>0, F.col("lucro")/F.col("usuarios_trat")).otherwise(F.lit(0.0)))
+                   .withColumn("roi_percent", F.when(F.col("custo")>0, F.col("lucro")/F.col("custo")).otherwise(F.lit(None))))
+
+    out = {}
+    for r in joined.select(segment_col, "usuarios_trat","gmv_trat","gmv_ctrl","uplift",
+                           "receita","custo","lucro","roi_por_usuario","roi_percent").collect():
+        out[str(r[segment_col])] = {
+            "n_treated": int(r["usuarios_trat"]),
+            "gmv_user_treat": float(r["gmv_trat"]),
+            "gmv_user_ctrl": float(r["gmv_ctrl"]),
+            "uplift_gmv_user": float(r["uplift"]),
+            "take_rate": take_rate,
+            "coupon_cost": coupon_cost,
+            "redemption_rate": redemption_rate,
+            "receita_incremental_total": float(r["receita"]),
+            "custo_total": float(r["custo"]),
+            "lucro_incremental_total": float(r["lucro"]),
+            "roi_por_usuario": float(r["roi_por_usuario"]),
+            "roi_percent": None if r["roi_percent"] is None else float(r["roi_percent"]),
+        }
     return out
