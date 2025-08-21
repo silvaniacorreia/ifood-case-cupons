@@ -38,51 +38,50 @@ def collect_user_level_for_tests(
     required_cols: Optional[Iterable[str]] = None,
     sample_frac: Optional[float] = 0.25,
     seed: int = 42,
+    stratify: bool = True,
 ) -> pd.DataFrame:
     """
-    Coleta as colunas necessárias para testes estatísticos em um DataFrame pandas.
-    Se `sample_frac` for fornecido (0<sample_frac<1) a amostragem é feita no Spark antes do toPandas,
-    reduzindo o volume transferido para o driver.
+    Coleta colunas para testes em pandas. Se `sample_frac` ∈ (0,1),
+    amostra no Spark antes do toPandas (opcionalmente estratificado por is_target).
     """
-    base_cols = [
-        "customer_id", "is_target", "frequency", "monetary",
-        "heavy_user", "is_new_customer", "origin_platform"
-    ]
+    base_cols = ["customer_id","is_target","frequency","monetary"]
+    extended_cols = ["heavy_user","is_new_customer","origin_platform"]
+
+    req = list(required_cols) if required_cols else []
     existing = set(users_silver.columns)
+
     missing = [c for c in base_cols if c not in existing]
-    if required_cols is not None:
-        missing += [c for c in required_cols if c not in existing]
+    missing += [c for c in req if c not in existing]
     if missing:
         raise KeyError(f"Colunas ausentes em users_silver: {sorted(set(missing))}")
 
-    df = users_silver.select(*base_cols)
+    to_select = [c for c in base_cols + extended_cols + req if c in existing]
+    df = users_silver.select(*to_select)
 
     if sample_frac is not None and 0 < sample_frac < 1:
-        # Habilita Arrow para acelerar a conversão quando disponível
         try:
             users_silver.sparkSession.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         except Exception:
             pass
-        df = df.sample(False, sample_frac, seed=seed)
+        if stratify and "is_target" in df.columns:
+            fracs = {r["is_target"]: float(sample_frac) for r in df.select("is_target").distinct().collect()}
+            df = df.sampleBy("is_target", fractions=fracs, seed=seed)
+        else:
+            df = df.sample(withReplacement=False, fraction=float(sample_frac), seed=seed)
 
     df = (
         df
-        .withColumn(
-            "aov_user",
-            F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")).cast(T.DoubleType())
-        )
+        .withColumn("aov_user", F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency")).cast(T.DoubleType()))
         .withColumn("conv_flag", (F.col("frequency") > 0).cast(T.IntegerType()))
     )
 
-    # Transferir apenas as colunas necessárias para pandas
-    pdf = df.select(*([c for c in base_cols if c in df.columns] + ["aov_user", "conv_flag"]))
-    pdf = pdf.toPandas()
-    ordered = base_cols + ["aov_user","conv_flag"]
+    keep = to_select + ["aov_user","conv_flag"]
+    pdf = df.select(*keep).toPandas()
+    ordered = base_cols + ["aov_user","conv_flag"] + [c for c in keep if c not in base_cols + ["aov_user","conv_flag"]]
     pdf = pdf[[c for c in ordered if c in pdf.columns]]
+
     return pdf
 
-
-# Spark-first: calcula métricas robustas no Spark usando percentile_approx
 def compute_robust_metrics_spark(users_silver: DataFrame, *, heavy_threshold: int = 3) -> DataFrame:
     """
     Calcula métricas robustas por grupo (controle vs tratamento) usando funções Spark:
@@ -227,64 +226,64 @@ def run_nonparam_tests(users_pdf: pd.DataFrame) -> Dict[str, Dict[str, float]]:
 
 # ========== VIABILIDADE ==========
 def financial_viability(
-    users_pdf: pd.DataFrame,
+    users_silver: DataFrame,
     *,
-    take_rate: float = 0.23,
-    coupon_cost: float = 10.0,
-    redemption_rate: float | None = None,
-    winsor: float | None = None,  # ex.: 0.01 aplica winsor 1% e 99% em monetary
+    take_rate: float,
+    coupon_cost: float,
+    redemption_rate: float,
+    id_col: str = "customer_id",
+    group_col: str = "is_target",
+    monetary_col: str = "monetary",
 ) -> Dict[str, float]:
     """
-    Estima viabilidade financeira da campanha a partir de dados no nível de usuário.
-    - Receita incremental total = (E[GMV_user|T] - E[GMV_user|C]) * N_tratados * take_rate
-    - Custo total = N_tratados * redemption_rate * coupon_cost
-      (se redemption_rate=None, usa conversão do tratamento como aproximação superior)
-    - ROI absoluto = Receita incremental total - Custo
-    - ROI por usuário = ROI absoluto / N_tratados
-    - LTV (horizonte do experimento) = take_rate * E[GMV_user|T]
-    - CAC = custo_total / (# usuários que resgataram) ≈ coupon_cost
+    Calcula viabilidade financeira total usando apenas agregados Spark (100% da base).
+    Retorna o mesmo dicionário de chaves usado no notebook original.
+    - receita_incremental_total = take_rate * (gmv_user_treat - gmv_user_ctrl) * n_treated
+    - custo_total               = coupon_cost * redemption_rate * n_treated
+    - roi_absoluto              = receita_incremental_total - custo_total
+    - roi_por_usuario           = roi_absoluto / n_treated
+    - ltv                       = take_rate * gmv_user_treat
+    - cac                       = coupon_cost (custo unitário do cupom)
     """
-    df = users_pdf.copy()
-    # preparo
-    df["conv_flag"] = (df["frequency"] > 0).astype(int)
-    if winsor is not None and 0 < winsor < 0.5:
-        lo, hi = df["monetary"].quantile([winsor, 1 - winsor])
-        df["monetary"] = df["monetary"].clip(lo, hi)
+    ab = (
+        users_silver
+        .groupBy(group_col)
+        .agg(
+            F.countDistinct(F.col(id_col)).alias("usuarios"),
+            F.avg(F.col(monetary_col)).alias("gmv_user")
+        )
+    )
 
-    t = df[df["is_target"] == 1]
-    c = df[df["is_target"] == 0]
-    n_t = len(t)
+    row_ctrl = ab.filter(F.col(group_col) == 0).select("usuarios","gmv_user").first()
+    row_tret = ab.filter(F.col(group_col) == 1).select("usuarios","gmv_user").first()
 
-    gmv_t = float(t["monetary"].mean())
-    gmv_c = float(c["monetary"].mean())
-    uplift_user = gmv_t - gmv_c
+    if row_ctrl is None or row_tret is None:
+        raise ValueError("Não foi possível encontrar ambos os grupos (controle=0 e tratamento=1).")
 
-    conv_t = float(t["conv_flag"].mean())
-    red = conv_t if redemption_rate is None else redemption_rate
+    n_treated = int(row_tret[0])
+    gmv_user_ctrl = float(row_ctrl[1]) if row_ctrl[1] is not None else 0.0
+    gmv_user_treat = float(row_tret[1]) if row_tret[1] is not None else 0.0
+    uplift_gmv_user = gmv_user_treat - gmv_user_ctrl
 
-    receita_inc_total = uplift_user * n_t * take_rate
-    custo_total = n_t * red * coupon_cost
-
-    roi_abs = receita_inc_total - custo_total
-    roi_user = roi_abs / n_t if n_t > 0 else np.nan
-
-    # LTV/CAC
-    ltv = take_rate * gmv_t
-    n_red = max(1, int(n_t * red))
-    cac = custo_total / n_red
+    receita_incremental_total = take_rate * uplift_gmv_user * n_treated
+    custo_total               = coupon_cost * redemption_rate * n_treated
+    roi_absoluto              = receita_incremental_total - custo_total
+    roi_por_usuario           = (roi_absoluto / n_treated) if n_treated > 0 else 0.0
+    ltv                       = take_rate * gmv_user_treat
+    cac                       = coupon_cost
 
     return {
-        "n_treated": n_t,
-        "gmv_user_treat": gmv_t,
-        "gmv_user_ctrl": gmv_c,
-        "uplift_gmv_user": uplift_user,
+        "n_treated": n_treated,
+        "gmv_user_treat": gmv_user_treat,
+        "gmv_user_ctrl": gmv_user_ctrl,
+        "uplift_gmv_user": uplift_gmv_user,
         "take_rate": take_rate,
         "coupon_cost": coupon_cost,
-        "redemption_rate": red,
-        "receita_incremental_total": receita_inc_total,
+        "redemption_rate": redemption_rate,
+        "receita_incremental_total": receita_incremental_total,
         "custo_total": custo_total,
-        "roi_absoluto": roi_abs,
-        "roi_por_usuario": roi_user,
+        "roi_absoluto": roi_absoluto,
+        "roi_por_usuario": roi_por_usuario,
         "ltv": ltv,
         "cac": cac,
     }

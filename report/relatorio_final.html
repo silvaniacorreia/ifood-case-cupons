@@ -1,0 +1,468 @@
+<!DOCTYPE html><html><head>
+      <title>relatorio_final</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\silva\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.19\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="relatório-final--impacto-da-campanha-de-cupons">Relatório Final – Impacto da Campanha de Cupons </h1>
+<h2 id="1-contexto">1. Contexto </h2>
+<p>O iFood testou uma campanha de cupons com um grupo de usuários selecionados (grupo teste), enquanto outro grupo similar não recebeu o benefício (grupo controle).<br>
+O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o gasto dos usuários, além de verificar a viabilidade financeira da iniciativa.</p>
+<p><strong>Glossário</strong></p>
+<ul>
+<li><strong>Mediana:</strong> valor típico por cliente (menos sensível a casos extremos).</li>
+<li><strong>p95:</strong> nível alto esperado (apenas ~5% dos clientes ficam acima disso).</li>
+<li><strong>Heavy users (≥3):</strong> parcela de clientes frequentes.</li>
+</ul>
+<hr>
+<h2 id="2-principais-resultados-da-campanha">2. Principais Resultados da Campanha </h2>
+<h3 id="21-engajamento-e-vendas">2.1 Engajamento e Vendas </h3>
+<p><strong>Tabela 1 – Sumário por grupo (medianas, p95 e heavy users).</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Grupo</th>
+<th style="text-align:right">Usuários</th>
+<th style="text-align:right">Mediana GMV</th>
+<th style="text-align:right">Mediana pedidos</th>
+<th style="text-align:right">Mediana AOV</th>
+<th style="text-align:right">p95 GMV</th>
+<th style="text-align:right">p95 pedidos</th>
+<th style="text-align:right">p95 AOV</th>
+<th style="text-align:right">% Heavy Users (≥3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">Sem Cupom</td>
+<td style="text-align:right">357261</td>
+<td style="text-align:right">66.2</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">40.85</td>
+<td style="text-align:right">457.40</td>
+<td style="text-align:right">9</td>
+<td style="text-align:right">100.6</td>
+<td style="text-align:right">30.71%</td>
+</tr>
+<tr>
+<td style="text-align:right">Com Cupom</td>
+<td style="text-align:right">442676</td>
+<td style="text-align:right">79.8</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">41.00</td>
+<td style="text-align:right">507.19</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">99.80</td>
+<td style="text-align:right">36.93%</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Pedidos por usuário</strong>: aumento de <strong>+100%</strong> no grupo que recebeu o cupom.</li>
+<li><strong>GMV por usuário (valor gasto no app)</strong>: crescimento de <strong>+20%</strong> com o cupom.</li>
+<li><strong>Ticket médio (AOV)</strong>: permaneceu estável, em torno de <strong>R$100 por pedido</strong>.</li>
+<li><strong>Heavy users (≥3 pedidos no período)</strong>: cresceram de <strong>31%</strong> para <strong>37%</strong> com o cupom.</li>
+</ul>
+<p><strong>Figura 1 – Medianas por grupo (GMV, Pedidos, AOV).</strong><br>
+<img src="assets/ab/bars_medians.png" alt="Medianas por grupo"></p>
+<p><strong>Figura 2 – Distribuição de pedidos por usuário (controle vs tratamento).</strong><br>
+<img src="assets/ab/hist_frequency.png" alt="Distribuição de pedidos"></p>
+<p><strong>Figura 3 – Boxplots (robustos a outliers) por grupo.</strong><br>
+a) GMV por usuário<br>
+<img src="assets/ab/box_monetary.png" alt="Box GMV"></p>
+<p>b) Pedidos por usuário<br>
+<img src="assets/ab/box_frequency.png" alt="Box Pedidos"></p>
+<p>c) AOV por usuário<br>
+<img src="assets/ab/box_aov_user.png" alt="Box AOV"></p>
+<p><strong>Interpretação:</strong><br>
+O cupom não aumentou o valor de cada pedido, mas levou os usuários a <strong>pedirem com mais frequência</strong>, elevando o gasto total.<br>
+Isso reforça o cupom como alavanca de engajamento e hábito de consumo, e não como impulsionador de ticket médio.</p>
+<hr>
+<h3 id="22-sustentabilidade-financeira">2.2 Sustentabilidade Financeira </h3>
+<p>Premissas adotadas:<br>
+- Valor do cupom: <strong>R$10</strong>, pago pelo iFood.<br>
+- Taxa de uso do cupom: <strong>30%</strong>.<br>
+- Comissão média do iFood (take rate): <strong>23%</strong> sobre o valor dos pedidos.</p>
+<ul>
+<li><strong>Receita incremental total (comissões adicionais):</strong> R$1,74 milhão.</li>
+<li><strong>Custo total dos cupons concedidos:</strong> R$1,33 milhão.</li>
+<li><strong>Lucro incremental total (receita − custo):</strong> R$416 mil.</li>
+<li><strong>Lucro incremental por usuário tratado:</strong> R$0,94.</li>
+<li><strong>LTV (valor estimado de longo prazo por cliente):</strong> R$34,6.</li>
+<li><strong>CAC (custo de aquisição via cupom):</strong> R$10.</li>
+<li><strong>Relação LTV/CAC:</strong> 3,5 → saudável.</li>
+<li><strong>ROI (%) ≈ 31,35%</strong></li>
+</ul>
+<p><strong>Tabela 2 – Indicadores financeiros (base).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Receita incremental total</td>
+<td>R$1,74 milhão</td>
+</tr>
+<tr>
+<td>Custo total dos cupons</td>
+<td>R$1,33 milhão</td>
+</tr>
+<tr>
+<td><strong>Lucro incremental total</strong></td>
+<td><strong>R$416 mil</strong></td>
+</tr>
+<tr>
+<td><strong>Lucro incremental por usuário</strong></td>
+<td><strong>R$0,94</strong></td>
+</tr>
+<tr>
+<td>LTV</td>
+<td>R$34,6</td>
+</tr>
+<tr>
+<td>CAC</td>
+<td>R$10</td>
+</tr>
+<tr>
+<td>LTV/CAC</td>
+<td>3,5</td>
+</tr>
+<tr>
+<td><strong>ROI (%)</strong></td>
+<td><strong>31,35%</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nota sobre o LTV:</strong><br>
+O cálculo do LTV (Lifetime Value) é normalmente utilizado em horizontes mais longos, acompanhando a evolução do cliente ao longo de vários meses ou anos. No nosso caso, os dados disponíveis cobrem apenas o período do experimento, de modo que o LTV foi aqui estimado a partir desse intervalo restrito.<br>
+Mesmo assim, a métrica foi incluída porque oferece uma boa referência de potencial de retorno por cliente e permite compará-lo com o CAC. Ou seja, ainda que a estimativa seja mais conservadora e não capture todo o ciclo de vida real do cliente, ela ajuda a reforçar a análise de viabilidade financeira no contexto deste case.</p>
+<p><strong>Interpretação:</strong><br>
+O investimento em cupons trouxe <strong>retorno positivo</strong> para o iFood.<br>
+Cada real gasto com cupons gerou aproximadamente <strong>R$3,50 de valor de cliente a longo prazo</strong>, indicando uma estratégia financeiramente sustentável.</p>
+<hr>
+<h3 id="23-conclusões">2.3. Conclusões </h3>
+<ul>
+<li>A campanha de cupons foi <strong>bem-sucedida em aumentar a frequência de pedidos e o GMV por usuário</strong>.</li>
+<li>O ticket médio permaneceu estável, mas o maior engajamento levou a uma <strong>receita incremental relevante</strong>.</li>
+<li>Financeiramente, a ação se mostrou <strong>viável e sustentável</strong>, com ROI positivo e excelente relação <strong>LTV/CAC</strong>.</li>
+<li>O cupom deve ser entendido como uma alavanca de <strong>engajamento e recorrência</strong>, mais do que de aumento de ticket médio.</li>
+</ul>
+<hr>
+<h3 id="24-recomendações-e-nova-proposta-de-teste-ab">2.4. Recomendações e Nova Proposta de Teste A/B </h3>
+<p>Os resultados da análise mostraram que os cupons, da forma como foram aplicados, aumentaram o número de pedidos e o GMV, mas não alteraram o valor médio por pedido (AOV). Além disso, observamos que até usuários com alto engajamento (heavy users) utilizaram os cupons, o que reduz a eficiência da campanha.</p>
+<p>Diante disso, recomendamos <strong>ajustes na estratégia</strong> antes de repetir a ação:</p>
+<h4 id="1-segmentação-mais-inteligente">1. Segmentação mais inteligente </h4>
+<ul>
+<li><strong>Evitar heavy users</strong>: clientes que já compram frequentemente tendem a usar o cupom, mas não aumentam seu gasto médio. Assim, o investimento não gera valor incremental.</li>
+<li><strong>Foco em clientes inativos ou de baixa frequência</strong>: direcionar cupons a esse grupo pode aumentar a base ativa e gerar maior retorno sobre o investimento.</li>
+</ul>
+<h4 id="2-diferenciar-o-tipo-de-cupom">2. Diferenciar o tipo de cupom </h4>
+<ul>
+<li><strong>Cupom com gasto mínimo</strong>: exemplo, "R$10 de desconto para compras acima de R$40”. Esse modelo incentiva aumento do ticket médio, combatendo o resultado neutro que vimos no AOV.</li>
+<li><strong>Frete grátis</strong>: alternativa que pode ser mais atrativa em alguns perfis de consumidores e incentivar novas compras.</li>
+</ul>
+<h4 id="3-nova-proposta-de-teste-ab">3. Nova proposta de teste A/B </h4>
+<p>Para validar essas hipóteses, sugere-se um desenho de experimento com três grupos:</p>
+<ul>
+<li><strong>Grupo Controle</strong>: sem cupom.</li>
+<li><strong>Grupo 1</strong>: cupom fixo de $10 com gasto mínimo de R$40.</li>
+<li><strong>Grupo 2</strong>: cupom de frete grátis com gasto mínimo de R$30.</li>
+</ul>
+<p><strong>Público-alvo do teste:</strong> clientes inativos ou de baixa frequência.</p>
+<h4 id="4-métricas-de-avaliação">4. Métricas de avaliação </h4>
+<ul>
+<li><strong>Pedidos por usuário</strong> (engajamento).</li>
+<li><strong>GMV incremental</strong> (crescimento de receita).</li>
+<li><strong>ROI da campanha</strong> (retorno financeiro líquido).</li>
+<li><strong>Taxa de reativação</strong> (quantos clientes voltaram a comprar).</li>
+</ul>
+<p>Com essa abordagem, será possível avaliar se os cupons funcionam não apenas como incentivo imediato, mas também como alavanca de crescimento sustentável para o negócio.</p>
+<hr>
+<h2 id="3-segmentação-de-usuários">3. Segmentação de usuários </h2>
+<h3 id="31-critérios-de-segmentação-e-racional">3.1. Critérios de segmentação e racional </h3>
+<p><strong>Objetivo.</strong> Agrupar clientes com comportamentos semelhantes para direcionar benefício, mensagem e canal, aumentando engajamento/retenção e otimizando custo de cupom.</p>
+<p><strong>Critérios utilizados:</strong></p>
+<ul>
+<li><strong>Frequência (Heavy user):</strong>
+<ul>
+<li><em>Definição</em>: <strong>heavy</strong> (≥ 3 pedidos no período) vs <strong>não-heavy</strong> (&lt; 3).</li>
+<li><em>Racional</em>: frequência é um preditor direto de valor; separar quem já tem hábito de compra de quem ainda está “em formação”.</li>
+</ul>
+</li>
+<li><strong>Plataforma de origem:</strong> <strong>Android</strong>, <strong>iOS</strong> e <strong>Desktop</strong>.
+<ul>
+<li><em>Racional</em>: o comportamento por dispositivo/canal difere (tamanho do ticket, fricção de checkout, jornada).</li>
+</ul>
+</li>
+<li><strong>RFM (Recency–Frequency–Monetary):</strong> códigos <strong>111–555</strong> (1=baixo, 5=alto em cada eixo).
+<ul>
+<li><em>Racional</em>: permite distinguir desde “recente-pouco-baixo ticket” (ex.: 111) até “recente-muito-alto ticket” (ex.: 555) para graduar o incentivo.</li>
+</ul>
+</li>
+<li><strong>Novo vs recorrente:</strong> sinalizamos <strong>novo</strong> quando disponível, porém, na base utilizada, o volume de “novo” é residual (amostra focada em quem já comprou). Mantemos como <strong>exploratório</strong> até incorporar usuários que ainda não pediram (para medir 1ª compra de fato).</li>
+</ul>
+<p><strong>Inserir figuras de referência (médias para visão geral e box/hist para forma da distribuição):</strong></p>
+<ul>
+<li>
+<p><strong>Barras – médias por segmento:</strong></p>
+<ul>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_heavy.png</code>]</li>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_new.png</code>]</li>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_platform.png</code>]</li>
+</ul>
+</li>
+<li>
+<p><strong>Boxplots – heavy_user (com e sem winsor 1%):</strong></p>
+<ul>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/box_heavy.png</code>]</li>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/box_heavy_w.png</code>]</li>
+</ul>
+</li>
+<li>
+<p><strong>Histogramas – por segmento (exploratório):</strong></p>
+<ul>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/hist_new.png</code>]</li>
+<li>[INSERIR FIGURA: <code>outputs/figs_segments/hist_platform.png</code>]</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="32-resultados-do-ab-por-segmento-e-recomendações">3.2. Resultados do A/B por segmento e recomendações </h3>
+<p><strong>1) Frequência (Heavy vs Não-heavy)</strong></p>
+<p><strong>Tabela 3 – Medianas por segmento (Heavy vs Não-heavy)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Segmento</th>
+<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ GMV</th>
+<th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
+<th style="text-align:right">Δ Pedidos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Não-heavy</td>
+<td style="text-align:right">34.929</td>
+<td style="text-align:right">47,00 → 50,00</td>
+<td style="text-align:right"><strong>+3,00</strong></td>
+<td style="text-align:right">1 → 1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>Heavy</td>
+<td style="text-align:right">20.439</td>
+<td style="text-align:right">205,60 → 208,20</td>
+<td style="text-align:right"><strong>+2,60</strong></td>
+<td style="text-align:right">5 → 5</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Não-heavy</strong>: ganho claro em <strong>GMV/usuário e pedidos/usuário</strong> com o cupom; AOV estável.</li>
+<li><strong>Heavy</strong>: efeito marginal (quase nulo) dentro do grupo.</li>
+<li>O grupo tratado tem <strong>mais heavy users</strong> (~37% vs ~31%), o que também puxa a média geral para cima (efeito de composição).</li>
+<li><strong>Ações sugeridas:</strong>
+<ul>
+<li><strong>Direcionar</strong> o cupom em <strong>não-heavy</strong> (1–2 pedidos) para conduzir ao 2º→3º pedido.</li>
+<li><strong>Reduzir frequência/valor</strong> do cupom para <strong>heavy</strong> (≥ 3) para evitar canibalização.</li>
+</ul>
+</li>
+<li><strong>KPI alvo:</strong> aumento da <strong>taxa de heavy users</strong> (≥ 3) e do <strong>GMV mediano</strong> entre não-heavy, com AOV estável.</li>
+</ul>
+<p><strong>2) Plataforma (Android / iOS / Desktop)</strong></p>
+<p><strong>Tabela 4 – Medianas por segmento (Plataforma)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Plataforma</th>
+<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ GMV</th>
+<th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
+<th style="text-align:right">Δ Pedidos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Android</td>
+<td style="text-align:right">23.632</td>
+<td style="text-align:right">59,00 → 69,80</td>
+<td style="text-align:right"><strong>+10,80</strong></td>
+<td style="text-align:right">1 → 2</td>
+<td style="text-align:right"><strong>+1</strong></td>
+</tr>
+<tr>
+<td>Desktop</td>
+<td style="text-align:right">7.939</td>
+<td style="text-align:right">63,20 → 73,60</td>
+<td style="text-align:right"><strong>+10,40</strong></td>
+<td style="text-align:right">1 → 2</td>
+<td style="text-align:right"><strong>+1</strong></td>
+</tr>
+<tr>
+<td>iOS</td>
+<td style="text-align:right">23.336</td>
+<td style="text-align:right">77,80 → 94,00</td>
+<td style="text-align:right"><strong>+16,20</strong></td>
+<td style="text-align:right">1 → 2</td>
+<td style="text-align:right"><strong>+1</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Desktop</strong> e <strong>iOS</strong> respondem melhor (maior ganho por usuário); <strong>Android</strong> responde, mas com retorno menor.</li>
+<li>Em mediana, Android e Desktop avançam de <strong>1→2 pedidos</strong>; iOS aumenta GMV mediano.</li>
+<li><strong>Ações sugeridas:</strong>
+<ul>
+<li><strong>Priorizar</strong> campanhas em <strong>Desktop e iOS</strong> (melhor retorno).</li>
+<li>Em <strong>Android</strong>, testar <strong>cupom menor</strong> ou <strong>gatilhos mais precisos</strong> (ex.: ofertar no 2º carrinho ou após período sem compra), para elevar eficiência.</li>
+</ul>
+</li>
+<li><strong>KPI alvo:</strong> <strong>ROI por usuário</strong> do segmento ≥ 0 e crescimento do <strong>p95</strong> sem queda de AOV.</li>
+</ul>
+<p><strong>3) RFM (111–555)</strong></p>
+<p><strong>Tabela 5 – RFM (Top 5 por população do Tratado)</strong></p>
+<table>
+<thead>
+<tr>
+<th>RFM</th>
+<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ GMV</th>
+<th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
+<th style="text-align:right">Δ Pedidos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>555</td>
+<td style="text-align:right">5.391</td>
+<td style="text-align:right">409,3 → 415,2</td>
+<td style="text-align:right"><strong>+5,9</strong></td>
+<td style="text-align:right">9 → 9</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>111</td>
+<td style="text-align:right">3.192</td>
+<td style="text-align:right">25,2 → 25,9</td>
+<td style="text-align:right"><strong>+0,7</strong></td>
+<td style="text-align:right">1 → 1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>112</td>
+<td style="text-align:right">2.904</td>
+<td style="text-align:right">44,0 → 44,5</td>
+<td style="text-align:right"><strong>+0,5</strong></td>
+<td style="text-align:right">1 → 1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>211</td>
+<td style="text-align:right">2.310</td>
+<td style="text-align:right">25,1 → 25,0</td>
+<td style="text-align:right"><strong>−0,1</strong></td>
+<td style="text-align:right">1 → 1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>455</td>
+<td style="text-align:right">2.054</td>
+<td style="text-align:right">343,6 → 332,8</td>
+<td style="text-align:right"><strong>−10,8</strong></td>
+<td style="text-align:right">7 → 7</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Dentro de cada célula RFM, o ganho tende a ser pequeno; o aumento global vem da <strong>maior participação</strong> de células de alto valor no grupo tratado (mix).</li>
+<li><strong>Ações sugeridas:</strong>
+<ul>
+<li><strong>Baixo RFM (11*, 21*, 31*)</strong>: cupom mais <strong>agressivo</strong> para gerar 2º e 3º pedidos.</li>
+<li><strong>Médio RFM (4*4, 45*)</strong>: cupom <strong>moderado</strong>, orientado a frequência.</li>
+<li><strong>Alto RFM (54*, 55*)</strong>: cupom <strong>baixo/ocasional</strong>, evitando gastos onde ganhos já existem.</li>
+</ul>
+</li>
+<li><strong>KPI alvo:</strong> progressão de faixas (ex.: 11*→12*/13*; 2*→3*), aumento de <strong>frequência mediana</strong> nas faixas baixas.</li>
+</ul>
+<p><strong>4) Novo vs Recorrente (limitação atual)</strong></p>
+<p><strong>Tabela 6 – Medianas (Novo vs Recorrente)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Segmento</th>
+<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ GMV</th>
+<th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
+<th style="text-align:right">Δ Pedidos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Recorrente</td>
+<td style="text-align:right">55.348</td>
+<td style="text-align:right">66,00 → 79,60</td>
+<td style="text-align:right"><strong>+13,60</strong></td>
+<td style="text-align:right">1 → 2</td>
+<td style="text-align:right"><strong>+1</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>O que vimos:</strong> o sinal de “novo” é residual na amostra (quase todos já compraram anteriormente), então a “conversão=1,0” é espúria.</li>
+<li><strong>O que fazer:</strong> incluir <strong>usuários sem pedido</strong> na base de teste (grupo de controle e tratado) para medir <strong>1ª compra</strong>; só então definir política específica para “novos”.</li>
+</ul>
+<hr>
+<h3 id="33-próximos-passos-de-produto-teste-direcionado">3.3. Próximos passos de produto (teste direcionado) </h3>
+<ol>
+<li><strong>Teste A/B estratificado</strong> por <strong>heavy_user</strong> e <strong>plataforma</strong>, com <strong>valor de cupom variável</strong> (ex.: Android R$6–8; iOS/Desktop R$10–12).</li>
+<li><strong>Gatilho de progressão</strong> para não-heavy (ofertar após o 1º ou 2º pedido, ou após X dias sem compra).</li>
+<li><strong>Métricas de sucesso</strong>:
+<ul>
+<li>Primárias: <strong>GMV mediano por usuário</strong> e <strong>taxa de heavy users</strong>, por segmento.</li>
+<li>Financeiras: <strong>Lucro incremental total</strong> e <strong>ROI(%)</strong> por segmento.</li>
+</ul>
+</li>
+<li><strong>Guardrails</strong>: manter <strong>AOV estável</strong> e não aumentar cancelamentos.</li>
+</ol>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>

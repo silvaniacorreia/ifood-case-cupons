@@ -64,6 +64,12 @@ ifood-case-cupons/
    `orders` é reparticionado por `customer_id` usando `spark.sql.shuffle.partitions`.  
    **Impacto:** melhor balanceamento no shuffle durante o join.
 
+4. **Spark-first & amostragem**
+   • Métricas descritivas e robustas (medianas, p95, taxa de heavy users) são calculadas no Spark e só então convertidas para pandas quando necessário (tabelas pequenas).
+   • Amostragem opcional para testes/plots: `collect_user_level_for_tests(sample_frac=...)` amostra no Spark antes do `toPandas()`, reduzindo tempo e memória (use 0.20–0.30 como referência).
+   • Arrow ativado quando disponível, acelerando `toPandas()` de agregados pequenos. (Habilitado via `spark.sql.execution.arrow.pyspark.enabled=true`).
+   • Reuso de shards do `order.json.gz`: `scripts/download_data.py` grava `data/raw/orders_sharded/` e o ETL lê diretamente desses shards em execuções seguintes.
+
 4. **Broadcast de dimensão pequena**  
    `restaurants` é broadcast para habilitar broadcast-hash join.  
    **Impacto:** elimina shuffle dessa dimensão e acelera o join.
@@ -230,10 +236,7 @@ Funções de validação e pré-checagem:
 
 ### `src/analysis_ab.py`
 Funções de:
-- Métricas A/B por grupo (Spark)
-- Coleta de dados por usuário para testes (Pandas)
-- Testes estatísticos (Welch t-test e z-test)
-- Viabilidade financeira (ROI com premissas)
+- Métricas A/B por grupo (Spark) e robustas (Spark, `percentile_approx`); coleta para testes em pandas com amostragem opcional.
 
 ## Etapas da Análise
 
@@ -269,6 +272,8 @@ Além das médias, reportamos também:
 * **p95 de GMV/usuário, Pedidos/usuário e AOV** (captura a cauda superior sem extremos)
 * **Heavy users (% com ≥3 pedidos no período)**
 
+Também reportamos métricas robustas (medianas, p95, heavy users) calculadas no Spark e usamos amostragem para gráficos e testes não-paramétricos quando necessário.
+
 #### Testes estatísticos
 
 * **Welch t-test** (médias, exploratório)  
@@ -277,16 +282,13 @@ Além das médias, reportamos também:
 
 #### Premissas financeiras
 
-1. **Custo do cupom**: R\$ 10,00, 100% pago pelo iFood (sem coparticipação de restaurantes).
-2. **Take rate (comissão iFood)**: 23%, valor plausível do mercado, usado como referência fixa.
-3. **Taxa de resgate**: cenário base 30%.
-4. **Horizonte temporal**: apenas o período do experimento (jan/2019), LTV calculado nesse intervalo.
-5. **Receita incremental**: `uplift de GMV/usuário × número de usuários tratados × take rate`.
-6. **Custos adicionais**: não considerados (marketing, operação, suporte). Somente custo direto dos cupons.
+As premissas padrão (take rate, custo do cupom) são lidas de `config/settings.yaml` e podem ser sobrescritas no notebook.
+Exemplo atual: `take_rate=0.23`, `coupon_cost=10.0`.
+Outras premissas (taxa de resgate, horizonte temporal) também podem ser parametrizadas no notebook ao chamar `financial_viability`.
 
 #### Indicadores financeiros
 
-Calculados na função `financial_viability`, a partir de premissas explícitas:
+Calculados na função `financial_viability`, a partir de premissas explícitas e com agregassão no Spark:
 
 * **ROI absoluto e por usuário**
 * **CAC (Custo de Aquisição de Cliente)**
@@ -302,20 +304,31 @@ No relatório, mantemos apenas:
 * ROI, LTV, CAC, LTV:CAC  
 * Premissas financeiras claras (take rate, valor do cupom, taxa de resgate)
 
----
+### 4. Segmentação de usuários (Tarefa 2)
+
+#### Objetivo
+Agrupar clientes com comportamentos semelhantes para **direcionar o cupom certo ao público certo**, maximizando engajamento/retenção e **ROI**.
+
+#### (a) Critérios de segmentação e racional
+- **Frequência (Heavy user)** — *heavy* (≥ 3 pedidos no período) vs *não-heavy* (< 3).  
+  *Por quê?* frequência é o melhor preditor de valor; separa quem já tem hábito de quem ainda está “em formação”.
+- **Plataforma de origem** — `android`, `ios`, `desktop`.  
+  *Por quê?* jornada/ticket variam por dispositivo/canal.
+- **RFM (Recency-Frequency-Monetary)** — códigos `111–555` (1=baixo, 5=alto).  
+  *Por quê?* permite graduar incentivo por valor e recência.
+- **Novo vs recorrente** — sinal informativo; nesta base, “novo” é residual (amostra focada em quem já comprou).
+
+> **Como ler os gráficos:** mostramos o **valor típico por cliente (mediana)**; **p95** ilustra a “ponta de cima”; **heavy users** é a % de clientes com ≥3 pedidos.  
+> **Financeiro (R$)** é calculado sobre **100% da base** no Spark (agregados), e só o **resumo** vem para o relatório.
+
+**Artefatos gerados (salvos em `outputs/`):**
+- Tabelas robustas (medianas/p95): `robust_heavy_user.csv`, `robust_origin_platform.csv`, `robust_rfm_segment.csv`, `robust_is_new_customer.csv`.
+- Tabelas de médias (sanity check / apêndice): `ab_*_summary.csv`.
+- Figuras: `outputs/figs_segments/` (barras de **medianas**, p95 e taxa de heavy; boxplots/hist EDA).
 
 ## 🔒 Privacidade
 
 - Dados PII **não** são mantidos nas camadas analíticas (hash/removidos).  
 - Os arquivos de dados **não** são versionados no Git; sempre baixados de fontes configuradas em `settings.yaml`.
 
----
 
-## 📌 Resumo para a apresentação
-
-- **Por que Colab-only?** Reprodutibilidade e simplicidade para os avaliadores.  
-- **Gargalo conhecido:** `orders` é grande e gzip não é splittable → leitura 1 task; depois **repartition + broadcast**.  
-- **Qualidade:** pré-flight fail-fast + profiling guiando o ETL; timezone/PII/validações.  
-- **A/B → ROI → RFM** na ordem pedida, com **premissas explícitas** e **próximos passos**.
-
----

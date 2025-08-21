@@ -122,3 +122,79 @@ def plot_hist_by_segment(
             outp = os.path.join(outdir, f"{fname}_{metric_col}_{seg}.png")
             plt.savefig(outp, dpi=160, bbox_inches="tight")
         plt.close(fig)
+
+def _robust_mapping(which: str):
+    which = which.lower()
+    if which == "median":
+        return {
+            "median_gmv_user": "gmv_user",
+            "median_pedidos_user": "pedidos_user",
+            "median_aov_user": "aov",
+        }
+    if which == "p95":
+        return {
+            "p95_gmv_user": "gmv_user",
+            "p95_pedidos_user": "pedidos_user",
+            "p95_aov_user": "aov",
+        }
+    raise ValueError("`which` deve ser 'median' ou 'p95'.")
+
+def prepare_bars_from_robust(df_robust, segment_col: str, which: str = "median"):
+    """
+    Converte um DF 'robusto' (com colunas median_* ou p95_*) para o formato
+    esperado por plot_bars_by_segment: gmv_user, pedidos_user, aov.
+    Mantém 'is_target' e a coluna de segmento.
+    """
+    mapping = _robust_mapping(which)
+    cols = [segment_col, "is_target"] + list(mapping.keys())
+    df = df_robust[cols].rename(columns=mapping).copy()
+    return df
+
+def plot_bars_from_robust(
+    df_robust,
+    segment_col: str,
+    which: str = "median",
+    title: str = None,
+    outdir: str = None,
+    fname: str = None,
+):
+    """
+    Faz barras diretamente de um DF robusto.
+    which='median' (padrão) ou 'p95'.
+    """
+    df_bars = prepare_bars_from_robust(df_robust, segment_col, which=which)
+    metrics_cols = ["gmv_user", "pedidos_user", "aov"]
+    ttl = title or (f"{which.upper()} por segmento (GMV/usuário, Pedidos/usuário, AOV)")
+    return plot_bars_by_segment(df_bars, segment_col, metrics_cols, title=ttl, outdir=outdir, fname=fname)
+
+def plot_rate_by_segment(
+    df_robust,
+    segment_col: str,
+    rate_col: str = "heavy_users_rate",
+    title: str = None,
+    outdir: str = None,
+    fname: str = None,
+):
+    """
+    Gráfico de barras para uma taxa por segmento (ex.: heavy_users_rate).
+    Espera colunas: segment_col, is_target, rate_col.
+    """
+    import matplotlib.pyplot as plt
+    tmp = (
+        df_robust[[segment_col, "is_target", rate_col]]
+        .pivot(index=segment_col, columns="is_target", values=rate_col)
+        .rename(columns={0: "Controle", 1: "Tratamento"})
+        .sort_index()
+    )
+    ax = tmp.plot(kind="bar", figsize=(9, 5), legend=True)
+    ax.set_title(title or "% de heavy users (≥3 pedidos) por segmento")
+    ax.set_xlabel(segment_col)
+    ax.set_ylabel("% de usuários")
+    plt.tight_layout()
+    if outdir and fname:
+        import os
+        os.makedirs(outdir, exist_ok=True)
+        plt.savefig(f"{outdir.rstrip('/')}/{fname}.png", dpi=120)
+        plt.close()
+    else:
+        return ax
