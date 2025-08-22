@@ -98,30 +98,32 @@ As configurações ficam em `config/settings.yaml`:
 
 ## Estrutura do repositório
 
-```
+```markdown
 ifood-case-cupons/
 ├─ README.md
 ├─ requirements.txt
 ├─ notebooks/
 │  └─ pipeline_analise_completa.ipynb   # notebook principal (orquestração)
 ├─ src/
-│  ├─ utils.py          # config Spark, seeds
-│  ├─ etl.py            # ingestão + limpeza + joins
-│  ├─ finance.py        # funções de análise financeira
-│  ├─ analysis_ab.py    # funções de análise A/B
-│  ├─ analysis_segments.py # funções de análise por segmentos
-│  ├─ viz_ab.py         # visualizações A/B
-│  └─ viz_segments.py   # visualizações por segmentos
+│  ├─ utils.py              # configuração Spark, seeds
+│  ├─ etl.py                # ingestão, limpeza e joins
+│  ├─ finance.py            # funções de análise financeira
+│  ├─ analysis_ab.py        # funções de análise A/B
+│  ├─ analysis_segments.py  # funções de análise por segmentos
+│  ├─ viz_ab.py             # visualizações A/B
+│  └─ viz_segments.py       # visualizações por segmento
 ├─ scripts/
-│  └─ download_data.py  # baixa e organiza dados brutos
+│  └─ download_data.py      # baixa e organiza dados brutos
 ├─ config/
-│  └─ settings.yaml     # parâmetros de execução
+│  └─ settings.yaml         # parâmetros de execução
 ├─ data/
-│  ├─ raw/              # dados brutos
-│  └─ processed/        # parquet do ETL
+│  ├─ raw/                  # dados brutos (não versionados)
+│  └─ processed/            # parquet gerados pelo ETL
 └─ report/
    ├─ assets/
-   │  ├─ figs_segments/ # figuras por segmento
-   │  └─ ab/            # figuras do A/B
-   └─ relatorio_final.md/.pdf # relatório executivo
+   │  ├─ figs_segments/     # figuras por segmento
+   │  └─ ab/                # figuras do A/B
+   ├─ relatorio_final_case_ifood.pdf   # relatório executivo (pdf)
+   ├─ relatorio_final.html             # relatório executivo (html)
+   └─ relatorio_final.md               # fontes do relatório
 ```
