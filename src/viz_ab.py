@@ -49,6 +49,15 @@ def plot_ab_box(
     """
     Plota um boxplot para a comparação entre grupos de controle e tratamento.
     """
+    # mapeamento amigável de nomes de métricas para eixo/título
+    label_map = {
+        "frequency": "Pedidos por usuário",
+        "monetary": "GMV por usuário",
+        "aov_user": "AOV por usuário",
+        "aov": "AOV por usuário",
+    }
+    pretty = label_map.get(metric_col.lower(), metric_col)
+
     df = to_pandas_safe(users_pdf_or_spark).copy()
     df = df[["is_target", metric_col]].dropna()
     df["is_target"] = df["is_target"].astype(int)
@@ -63,7 +72,7 @@ def plot_ab_box(
 
     fig, ax = plt.subplots(figsize=(8,4))
     ax.boxplot([s0.values, s1.values], showfliers=True, labels=["Controle", "Tratamento"])
-    _fmt_axes(ax, y_label=metric_col, title=title or f"Boxplot • {metric_col}", y_log=y_log)
+    _fmt_axes(ax, y_label=pretty, title=title or f"Boxplot • {pretty}", y_log=y_log)
     plt.tight_layout()
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{fname or ('box_'+metric_col)}.png")
@@ -83,6 +92,15 @@ def plot_ab_hist_overlay(
     """
     Plota um histograma sobreposto para a comparação entre grupos de controle e tratamento.
     """
+    # mapeamento amigável de nomes de métricas para eixo/título
+    label_map = {
+        "frequency": "Pedidos por usuário",
+        "monetary": "GMV por usuário",
+        "aov_user": "AOV por usuário",
+        "aov": "AOV por usuário",
+    }
+    pretty = label_map.get(metric_col.lower(), metric_col)
+
     df = users_pdf.copy()
     df = df[["is_target", metric_col]].dropna()
     df["is_target"] = df["is_target"].astype(int)
@@ -99,8 +117,9 @@ def plot_ab_hist_overlay(
     ax.hist(s0.values, bins=bins, alpha=0.5, density=True, label="Controle")
     ax.hist(s1.values, bins=bins, alpha=0.5, density=True, label="Tratamento")
     ax.legend()
-    ax.set_xlabel(metric_col); ax.set_ylabel("densidade")
-    ax.set_title(title or f"Distribuição • {metric_col}")
+    ax.set_xlabel(pretty)
+    ax.set_ylabel("densidade")
+    ax.set_title(title or f"Distribuição • {pretty}")
     plt.tight_layout()
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{fname or ('hist_'+metric_col)}.png")
@@ -122,17 +141,36 @@ def plot_group_bars(
     d = df_summary.copy()
     d["Grupo"] = d["is_target"].map({0:"Controle",1:"Tratamento"}).astype(str)
 
+    median_default_map = {
+        "GMV mediano": "GMV (mediana)",
+        "GMV mediano ": "GMV (mediana)",
+        "Pedidos medianos": "Pedidos (mediana)",
+        "Pedidos medianos ": "Pedidos (mediana)",
+        "AOV mediano": "AOV (Mediana)",
+        "AOV mediano ": "AOV (Mediana)",
+        "gmv_user": "GMV (mediana)",
+        "pedidos_user": "Pedidos (mediana)",
+        "aov": "AOV (Mediana)",
+    }
+
+    median_flag = any(("median" in str(m).lower()) or ("mediano" in str(m).lower()) or ("mediana" in str(m).lower()) for m in metrics)
+
     fig, ax = plt.subplots(figsize=(8,5))
     x = np.arange(len(d["Grupo"]))
     width = 0.22
 
     for i, m in enumerate(metrics):
-        lab = labels_map.get(m, m) if labels_map else m
+        lab = None
+        if labels_map and m in labels_map:
+            lab = labels_map[m]
+        else:
+            lab = median_default_map.get(m, m)
         ax.bar(x + (i - (len(list(metrics))-1)/2)*width, d[m].astype(float).values, width, label=lab)
 
     ax.set_xticks(x); ax.set_xticklabels(d["Grupo"])
     ax.legend()
-    _fmt_axes(ax, y_label="Valor média/mediana", title=title or "Comparação entre grupos")
+    y_label = "Valor (mediana)" if median_flag else "Valor média/mediana"
+    _fmt_axes(ax, y_label=y_label, title=title or "Comparação entre grupos")
     plt.tight_layout()
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{fname}.png")

@@ -35,13 +35,29 @@ def plot_bars_by_segment(
     title: Optional[str] = None,
     outdir: Optional[str] = None,
     fname: Optional[str] = None,
+    labels_map: Optional[dict] = None,
+    y_label: Optional[str] = None,
 ):
     """
     Plota barras para a comparação entre grupos de controle e tratamento.
+
+    - labels_map: mapeia nome de coluna -> rótulo amigável (ex: "gmv_user" -> "GMV (mediana)").
+    - y_label: rótulo do eixo y (ex: "Valor (mediana)").
     """
     df = to_pandas_spark(df_or_spark)
     segs = sorted(df[segment_col].astype(str).unique().tolist())
-    groups = sorted(df[group_col].astype(int).unique().tolist())  # [0, 1]
+    groups = sorted(df[group_col].astype(int).unique().tolist())  
+
+    group_name_map = {0: "Controle", 1: "Tratamento"}
+
+    def _pretty_segment_label(s: str) -> str:
+        if "heavy" in segment_col.lower():
+            sl = s.lower()
+            if sl in ("true", "1", "t", "yes", "y"):
+                return "Heavy"
+            if sl in ("false", "0", "f", "no", "n"):
+                return "Não-Heavy"
+        return s
 
     for metric in value_cols:
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -52,12 +68,20 @@ def plot_bars_by_segment(
             for s in segs:
                 v = df[(df[segment_col].astype(str) == str(s)) & (df[group_col] == g)][metric]
                 vals.append(float(v.values[0]) if len(v) else np.nan)
-            ax.bar(x + (gi-0.5)*width, vals, width, label=f"{group_col}={g}")
+            legend_label = group_name_map.get(g, f"{group_col}={g}")
+            ax.bar(x + (gi - 0.5) * width, vals, width, label=legend_label)
+
         ax.set_xticks(x)
-        ax.set_xticklabels(segs, rotation=30, ha="right")
-        ax.set_ylabel(metric)
+        ax.set_xticklabels([_pretty_segment_label(s) for s in segs], rotation=30, ha="right")
+
+        pretty_metric = (labels_map or {}).get(metric, metric)
+        ax.set_ylabel(y_label or pretty_metric)
+
         if title:
-            ax.set_title(f"{title} — {metric}")
+            ax.set_title(f"{title} — {pretty_metric}")
+        else:
+            ax.set_title(f"{pretty_metric} por segmento")
+
         ax.legend()
         plt.tight_layout()
         if outdir and fname:
@@ -182,7 +206,32 @@ def plot_bars_from_robust(
     df_bars = prepare_bars_from_robust(df_robust, segment_col, which=which)
     metrics_cols = ["gmv_user", "pedidos_user", "aov"]
     ttl = title or (f"{which.upper()} por segmento (GMV/usuário, Pedidos/usuário, AOV)")
-    return plot_bars_by_segment(df_bars, segment_col, metrics_cols, title=ttl, outdir=outdir, fname=fname)
+
+    if which.lower() == "median":
+        ylbl = "Valor (mediana)"
+        labels_map = {
+            "gmv_user": "GMV (mediana)",
+            "pedidos_user": "Pedidos (mediana)",
+            "aov": "AOV (Mediana)",
+        }
+    else:
+        ylbl = None
+        labels_map = {
+            "gmv_user": "GMV",
+            "pedidos_user": "Pedidos",
+            "aov": "AOV",
+        }
+
+    return plot_bars_by_segment(
+        df_bars,
+        segment_col,
+        metrics_cols,
+        title=ttl,
+        outdir=outdir,
+        fname=fname,
+        labels_map=labels_map,
+        y_label=ylbl,
+    )
 
 def plot_rate_by_segment(
     df_robust,
@@ -204,9 +253,18 @@ def plot_rate_by_segment(
         .sort_index()
     )
     ax = tmp.plot(kind="bar", figsize=(9, 5), legend=True)
+
     ax.set_title(title or "% de heavy users (≥3 pedidos) por segmento")
-    ax.set_xlabel(segment_col)
+    ax.set_xlabel("")  
     ax.set_ylabel("% de usuários")
+
+    ax.set_xticks(range(len(tmp.index)))
+    ax.set_xticklabels(tmp.index, rotation=30, ha="right")
+
+    leg = ax.get_legend()
+    if leg is not None:
+        leg.set_title(None)
+
     plt.tight_layout()
     if outdir and fname:
         import os
