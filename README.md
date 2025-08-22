@@ -61,9 +61,9 @@ O objetivo foi analisar um **teste A/B de cupons**, avaliando impacto em engajam
    * **ETL** (limpeza, joins, normalizações).
    * **Análise A/B** com métricas e testes estatísticos.
    * **Análise financeira** (ROI, LTV/CAC).
-   * **Segmentação de usuários** e recomendações.
+   * **Segmentação de usuários** e cálculo de break-even.
 
-> ⏱️ O processamento inicial pode levar alguns minutos devido ao tamanho dos arquivos.
+> ⏱️ O processamento pode levar alguns minutos devido ao tamanho dos arquivos.
 
 ---
 
@@ -106,6 +106,7 @@ ifood-case-cupons/
 ├─ src/
 │  ├─ utils.py          # config Spark, seeds
 │  ├─ etl.py            # ingestão + limpeza + joins
+│  ├─ finance.py        # funções de análise financeira
 │  ├─ analysis_ab.py    # funções de análise A/B
 │  ├─ analysis_segments.py # funções de análise por segmentos
 │  ├─ viz_ab.py         # visualizações A/B
