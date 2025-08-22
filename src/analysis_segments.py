@@ -5,11 +5,6 @@ from pyspark.sql import DataFrame, functions as F
 from pyspark.sql import types as T
 from scipy import stats
 
-from src.analysis_ab import financial_viability
-
-# -----------------------------
-# 1) RFM buckets (Spark)
-# -----------------------------
 def build_rfm_buckets(
     users_silver: DataFrame,
     *,
@@ -53,9 +48,6 @@ def build_rfm_buckets(
     )
     return users
 
-# -----------------------------
-# 2) Agregações por segmento (Spark)
-# -----------------------------
 def ab_metrics_by_segment(
     users_with_segments: DataFrame,
     *,
@@ -89,9 +81,6 @@ def ab_metrics_by_segment(
         df = df.join(totals.select(segment_col), on=segment_col, how="inner")
     return df.orderBy(segment_col, "is_target")
 
-# -----------------------------
-# 3) Testes por segmento (Pandas)
-# -----------------------------
 def _mw(x_t: pd.Series, x_c: pd.Series) -> Dict[str, float]:
     xt = pd.to_numeric(x_t, errors="coerce").dropna()
     xc = pd.to_numeric(x_c, errors="coerce").dropna()
@@ -125,9 +114,6 @@ def nonparam_tests_by_segment(
         out[str(seg_val)] = res
     return out
 
-# -----------------------------
-# 4) Métricas robustas por segmento (Pandas)
-# -----------------------------
 def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int = 3):
     """
     Versão que aceita tanto pandas DataFrame quanto Spark DataFrame.
@@ -137,7 +123,6 @@ def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int =
 
     Se `users` for pandas: mantém o comportamento anterior.
     """
-    # Detecta Spark DataFrame
     try:
         from pyspark.sql import DataFrame as SparkDF
         is_spark = isinstance(users, SparkDF)
@@ -146,7 +131,6 @@ def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int =
 
     if is_spark:
         df_spark = users
-        # garante colunas necessárias
         required = [segment_col, "is_target", "customer_id", "monetary", "frequency"]
         missing = [c for c in required if c not in df_spark.columns]
         if missing:
@@ -170,12 +154,10 @@ def robust_metrics_by_segment(users, *, segment_col: str, heavy_threshold: int =
                 F.lit(heavy_threshold).alias("heavy_threshold")
             )
         )
-        # converte para pandas (pequeno) para escrita/plot
         pdf = agg.orderBy("segment", "is_target").toPandas()
         return pdf
 
     else:
-        # pandas path: preserva implementação anterior
         users_pdf = users
         rows = []
         for (seg, tgt), g in users_pdf.groupby([segment_col, "is_target"]):

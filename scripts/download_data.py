@@ -37,12 +37,18 @@ def shard_ndjson_gz(src_gz: Path, out_dir: Path, target_mb: int = 100) -> None:
     print(f"[shard] Geradas {part_idx+1} partes.")
 
 def load_settings(path: str = "config/settings.yaml") -> dict:
+    """
+    Carrega as configurações do arquivo YAML.
+    """
     if not os.path.exists(path):
         path = "config/settings.example.yaml"
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def stream_download(url: str, dest: Path, chunk_size: int = 1024 * 1024) -> None:
+    """
+    Faz o download de um arquivo de forma eficiente.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     with requests.get(url, stream=True, timeout=60) as r:
         r.raise_for_status()
@@ -55,12 +61,18 @@ def stream_download(url: str, dest: Path, chunk_size: int = 1024 * 1024) -> None
                         pbar.update(len(chunk))
 
 def extract_tar_gz(tar_path: Path, out_dir: Path) -> Path:
+    """
+    Extrai um arquivo TAR.GZ para um diretório de saída.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(out_dir)
     return out_dir
 
 def remove_mac_artifacts(dirpath: Path) -> None:
+    """
+    Remove artefatos do macOS (arquivos que começam com "._" ou ".DS_Store").
+    """
     for p in dirpath.rglob("*"):
         if p.name.startswith("._") or p.name == ".DS_Store":
             try:
@@ -78,7 +90,6 @@ def main():
 
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1) Baixar todos os arquivos
     for key, meta in sources.items():
         url = meta["url"]
         filename = meta["filename"]
@@ -89,7 +100,6 @@ def main():
             print(f"[down] {key}: {url}")
             stream_download(url, dest)
 
-        # 2) Descompactar somente quando necessário
         if filename.endswith(".tar.gz"):
             out = raw_dir / "ab_test_ref_extracted"
             if any(p.suffix == ".csv" for p in out.rglob("*")):
@@ -99,7 +109,6 @@ def main():
                 extract_tar_gz(dest, out)
                 remove_mac_artifacts(out)
 
-    # 3) SHARD do orders.json.gz para leitura paralela nas próximas execuções
     orders_gz = raw_dir / "order.json.gz"
     sharded_dir = raw_dir / "orders_sharded"
     if orders_gz.exists():

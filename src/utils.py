@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from pyspark.sql import SparkSession
 import numpy as np
 
-# --------- Modelos de configuração ---------
 class SparkConfig(BaseModel):
     app_name: str = "ifood-case-cupons"
     shuffle_partitions: int = 64
@@ -27,7 +26,6 @@ class DataPaths(BaseModel):
         "restaurants_csv_gz": "restaurant.csv.gz",
         "ab_test_tar_gz": "ab_test_ref.tar.gz",
     }
-
 class AnalysisConfig(BaseModel):
     use_cuped: bool = True
     winsorize: float = 0.02
@@ -65,10 +63,11 @@ def load_settings(path: str = "config/settings.yaml") -> Settings:
     return Settings(**raw)
 
 def set_seeds(seed: int = 42):
+    """
+    Define a semente para a geração de números aleatórios.
+    """
     random.seed(seed)
     np.random.seed(seed)
-
-from pyspark.sql import SparkSession
 
 def get_spark(app_name: str, shuffle_partitions: int = 64, extra_conf: dict | None = None):
     """
@@ -123,17 +122,8 @@ def benchmark_shuffle(spark: SparkSession, df, shuffle_partitions_list: list[int
         spark.conf.set("spark.sql.shuffle.partitions", partitions)
         print(f"Testing shuffle_partitions={partitions}...")
         start_time = time.time()
-        # Exemplo de operação de shuffle (groupBy + count)
         df.groupBy("customer_id").count().collect()
         elapsed_time = time.time() - start_time
         results[partitions] = elapsed_time
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
     return results
-
-"""
-Este módulo fornece:
-- Modelos de configuração usando Pydantic
-- Funções para carregar configurações e inicializar SparkSession
-- Utilitários para benchmarking e controle de sementes
-"""
-

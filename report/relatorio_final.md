@@ -4,6 +4,8 @@
 O iFood testou uma campanha de cupons com um grupo de usuários selecionados (grupo teste), enquanto outro grupo similar não recebeu o benefício (grupo controle).  
 O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o gasto dos usuários, além de verificar a viabilidade financeira da iniciativa.
 
+**Período amostrado:** Janela inferida de 01-01-2029 a 01-02-2019, desconsiderando registros isolados fora desse período (quantis 1–99%).
+
 **Glossário**
 - **Mediana:** valor típico por cliente (menos sensível a casos extremos).
 - **p95:** nível alto esperado (apenas ~5% dos clientes ficam acima disso).
@@ -341,30 +343,114 @@ c) Pedidos por usuário
 
 ## 4. Próximos Passos 
 
-**Como interpretar o break-even**  
-Com as premissas atuais (take rate 23%, cupom R\$10, uso 30%), o cupom **só se paga** se cada usuário tratado gerar **≥ R$ 13,04** de **vendas extras** no período.
+### 4.1. Próximos passos recomendados
+
+#### Redesenhar a política de cupons
+
+* **Evitar heavy users**: já compram com alta frequência e consomem cupom sem gerar vendas extras, resultando em **prejuízo médio de até R\$2,80 por usuário** (canibalização), como mostra o quadro de break-even (item 4.2).
+* **Focar em não-heavy e clientes inativos**: maior potencial de progressão de frequência e reativação. Ex.: clientes que fizeram apenas **1 pedido nos últimos 3 meses** podem receber incentivo para chegar a 2–3 pedidos.
+* **Cupom condicional (mínimo de gasto)**: ex. “R\$10 de desconto em compras ≥ R\$40”. Esse modelo ajuda a **elevar o ticket médio**, hoje observado como estável.
+* **Testar frete grátis como alternativa**: pode ser mais eficiente em usuários sensíveis ao custo logístico, sobretudo novos clientes.
+
+#### Direcionar por plataforma
+
+* **Priorizar Desktop e iOS**: ROI positivo, chegando a **R\$1,82 de lucro incremental por usuário**, como mostra o quadro de break-even (item 4.2).
+* **Android**: ROI próximo de zero (**R\$0,21**). Recomenda-se **reduzir o valor do cupom** ou aplicar **gatilhos mais específicos** (ex.: desconto apenas no 2º pedido ou para reativação após hiato).
+
+#### Estratégia RFM simplificada
+
+* **Baixo RFM**: clientes pouco recentes, de baixa frequência e baixo gasto → incentivo agressivo para aumentar pedidos (1→2→3).
+* **Médio RFM**: clientes medianos em frequência e gasto → cupons moderados, estimulando progressão gradual.
+* **Alto RFM**: clientes com alta frequência e alto gasto → cupons ocasionais ou vinculados a categorias novas, evitando desperdício e canibalização.
+
+#### Refinar desenho experimental
+
+* **Randomização estratificada** por heavy users (ou reponderação posterior) → reduz risco de distorções.
+* Testar diferentes grupos:
+
+  * Controle (sem cupom).
+  * Cupom fixo com gasto mínimo.
+  * Cupom frete grátis com gasto mínimo.
+* **Incluir novos clientes** na base do experimento para medir taxa de conversão da 1ª compra.
+* Benefício esperado: **comparar formatos de incentivo** e **evitar gastos em segmentos onde o ROI já se mostrou negativo**.
+
+---
+
+### 4.2 Previsão de impacto (financeiro e não financeiro)
+
+### Impacto financeiro atual (teste A/B realizado)
 
 **Quadro – Break-even por célula (resumo)**
 
-| Célula        | Precisa | Entregou | Gap  | Lucro/usuário | Status |
-|---|---:|---:|---:|---:|:--:|
-| Geral         | 13,04 | 17,13 | +4,09 | 0,94 | OK |
-| Android       | 13,04 | 13,96 | +0,91 | 0,21 | No limite |
-| Desktop       | 13,04 | 20,95 | +7,91 | 1,82 | OK |
-| iOS           | 13,04 | 18,95 | +5,91 | 1,36 | OK |
-| Não-heavy     | 13,04 | 3,13  | −9,91 | −2,28 | NEG |
-| Heavy         | 13,04 | 0,88  | −12,16| −2,80 | NEG |
+| Célula    | Precisa | Entregou |    Gap | Lucro/usuário |   Status  |
+| --------- | ------: | -------: | -----: | ------------: | :-------: |
+| Geral     |   13,04 |    17,13 |  +4,09 |          0,94 |     OK    |
+| Android   |   13,04 |    13,96 |  +0,91 |          0,21 | No limite |
+| Desktop   |   13,04 |    20,95 |  +7,91 |          1,82 |     OK    |
+| iOS       |   13,04 |    18,95 |  +5,91 |          1,36 |     OK    |
+| Não-heavy |   13,04 |     3,13 |  −9,91 |         −2,28 |    NEG    |
+| Heavy     |   13,04 |     0,88 | −12,16 |         −2,80 |    NEG    |
 
+**Regras práticas**
 
+* **OK**: *Entregou* ≥ **R\$13,04** **e** **Lucro/usuário ≥ 0** → manter/escala.
+* **No limite**: diferença para **R\$13,04** < **R\$2,00** → ajustar (cupom menor, mínimo de carrinho, gatilhos).
+* **NEG**: *Entregou* < **R\$13,04** → pausar ou recalibrar.
+  **Checkpoints:** avaliar semanal/quinzenal; se uma célula ficar **NEG em 2 leituras seguidas** com **N tratado ≥ 1.000**, suspender até novo desenho.
 
-**Regras práticas (farol sem emojis)**  
-- **OK**: *Entregou* ≥ **R$ 13,04** **e** **Lucro/usuário ≥ 0** → **manter/escala**.  
-- **No limite**: diferença para **R$ 13,04** < **R$ 2,00** → **ajustar** (valor menor, mínimo de carrinho, gatilhos).  
-- **NEG**: *Entregou* < **R$ 13,04** → **pausar ou recalibrar**.  
-**Checkpoints:** avaliar **semanal/quinzenal**; se uma célula ficar **NEG por 2 leituras seguidas** com **N tratado ≥ 1.000**, **suspender** até novo desenho.
+**Interpretação executiva**:
 
-**Sinalização de ação**  
-- **Escalar**: **Desktop** e **iOS** (boa folga sobre o break-even).  
-- **Calibrar**: **Android** (cupom menor e/ou mínimo de carrinho; gatilhos de intenção/reativação; foco em não-heavy).  
-- **Restringir**: **Heavy** (ocasional/condicional) e **Windows Phone** (N pequeno e negativo).
+* Desktop e iOS entregaram ROI confortável.
+* Android ficou no limite.
+* Heavy e não-heavy tiveram destruição de valor, reforçando a necessidade de segmentar melhor.
+
+#### Impacto esperado com as recomendações
+
+* **Cenário com ajustes** (foco em segmentos rentáveis e exclusão dos negativos): projeção de **margem incremental anual de aproximadamente R\$4.8 milhões**.
+* Esse ganho vem de duas frentes:
+
+  1. **Cortar o desperdício** em segmentos onde o cupom gera prejuízo (heavy e parte de Android).
+  2. **Redirecionar investimento** para perfis de maior potencial (não-heavy inativos, Desktop/iOS, clientes de baixo RFM).
+
+#### Impacto não financeiro
+
+* **Retenção**: maior fidelização de clientes de baixo valor e inativos, transformando-os em usuários mais habituais.
+* **Eficiência de marketing**: melhor alocação do orçamento de cupons, garantindo que cada real gasto tenha chance maior de retorno.
+* **Governança de testes**: aprendizados mais rápidos e confiáveis com experimentos estratificados, reduzindo risco de decisões equivocadas.
+---
+
+### 4.3. Melhorias no processo/teste
+
+- **Checkpoints semanais/quinzenais**: implementar uma rotina de monitoramento dos segmentos. Se um grupo apresentar resultado **NEG (lucro/usuário < 0) em duas leituras consecutivas** com base de usuários tratada relevante (≥ 1.000), o cupom deve ser suspenso até redesenho. Essa prática garante que não haja destruição de valor prolongada.  
+
+- **Métricas mais robustas**: complementar médias com indicadores como **mediana, p95 e heavy rate**. Isso reduz distorções causadas por poucos usuários extremos e traz uma leitura mais fiel do comportamento típico do cliente.  
+
+- **Automatização do cálculo de break-even**: já implementada via `break_even_table_spark`, deve ser usada como ferramenta de rotina. Ela permite identificar rapidamente onde a campanha se paga ou não, sem depender de análises manuais pontuais.  
+
+- **Dashboards executivos**: consolidar os resultados em um painel simples (segmento × ROI × break-even). Dessa forma, stakeholders podem acompanhar em tempo real onde o incentivo está gerando valor e onde é necessário ajuste, aumentando a agilidade de decisão.  
+
+---
+
+### 4.4. Premissas adotadas
+
+* **Financeiras:**
+
+  * *Take rate* fixo em **23%**.
+  * Valor de cupom em **R\$10**, pago pelo iFood.
+  * Taxa de resgate em **30%**.
+
+* **Horizonte de análise:**
+
+  * **≈1 mês**, correspondente à janela do experimento.
+  * Usado como **proxy de LTV de curto prazo**, sem capturar efeitos de retenção de longo prazo ou sazonalidade.
+
+* **Extrapolação de impacto:**
+
+  * Projeções anualizadas assumem **constância da taxa de resgate e da elasticidade observada**.
+
+* **População de novos clientes:**
+
+  * Assumida relevante para impacto total, mas **não mensurada no dataset**.
+  * Necessário incluir explicitamente em próximos testes para medir **conversão de primeira compra**.
+
 

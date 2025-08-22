@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------- util ----------
 def _ensure_dir(p: str) -> None:
     os.makedirs(p, exist_ok=True)
 
@@ -17,17 +16,20 @@ def _fmt_axes(ax, y_label: str, title: Optional[str] = None, y_log: bool = False
         ax.yaxis.set_major_locator(plt.MaxNLocator(8))
     ax.grid(True, axis="y", alpha=0.25)
 
-# ---------- tabelas ----------
 def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
+    """
+    Salva um DataFrame como um arquivo CSV.
+    """
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{name}.csv")
     df.to_csv(outp, index=False)
     return outp
 
-# ---------- gráficos de distribuição / box ----------
 def to_pandas_safe(df):
+    """
+    Converte um DataFrame do Spark para um DataFrame do Pandas, se necessário.
+    """
     try:
-        # Spark DataFrame
         if hasattr(df, "toPandas") and not isinstance(df, pd.DataFrame):
             return df.toPandas()
     except Exception:
@@ -44,11 +46,13 @@ def plot_ab_box(
     y_log: bool = False,
     title: Optional[str] = None,
 ):
+    """
+    Plota um boxplot para a comparação entre grupos de controle e tratamento.
+    """
     df = to_pandas_safe(users_pdf_or_spark).copy()
     df = df[["is_target", metric_col]].dropna()
     df["is_target"] = df["is_target"].astype(int)
 
-    # clipping leve contra outliers extremos (sem esconder o shape)
     s0 = pd.to_numeric(df[df["is_target"]==0][metric_col], errors="coerce").dropna()
     s1 = pd.to_numeric(df[df["is_target"]==1][metric_col], errors="coerce").dropna()
     if clip_p and 0 < clip_p < 0.5:
@@ -76,6 +80,9 @@ def plot_ab_hist_overlay(
     fname: Optional[str] = None,
     title: Optional[str] = None,
 ):
+    """
+    Plota um histograma sobreposto para a comparação entre grupos de controle e tratamento.
+    """
     df = users_pdf.copy()
     df = df[["is_target", metric_col]].dropna()
     df["is_target"] = df["is_target"].astype(int)
@@ -100,7 +107,6 @@ def plot_ab_hist_overlay(
     plt.savefig(outp, dpi=160, bbox_inches="tight"); plt.close(fig)
     return outp
 
-# ---------- barras de médias/medianas ----------
 def plot_group_bars(
     df_summary: pd.DataFrame,
     *,
@@ -110,6 +116,9 @@ def plot_group_bars(
     fname: str = "group_bars",
     title: Optional[str] = None
 ):
+    """
+    Plota barras para a comparação entre grupos de controle e tratamento.
+    """
     d = df_summary.copy()
     d["Grupo"] = d["is_target"].map({0:"Controle",1:"Tratamento"}).astype(str)
 
@@ -123,7 +132,7 @@ def plot_group_bars(
 
     ax.set_xticks(x); ax.set_xticklabels(d["Grupo"])
     ax.legend()
-    _fmt_axes(ax, y_label="Valor médio/robusto", title=title or "Comparação entre grupos")
+    _fmt_axes(ax, y_label="Valor média/mediana", title=title or "Comparação entre grupos")
     plt.tight_layout()
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{fname}.png")
