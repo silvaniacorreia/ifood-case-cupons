@@ -64,7 +64,7 @@ O objetivo foi analisar um **teste A/B de cupons**, avaliando impacto em engajam
    * **Segmentação de usuários** (frequência, plataforma, RFM).
    * **Cálculo de break-even** e projeção de margem incremental.
 
-> ⏱️ O processamento pode levar alguns minutos devido ao tamanho dos arquivos.
+> ⏱️ O processamento pode levar alguns minutos devido ao tamanho dos arquivos, variando conforme o horário de execução (o Google altera a oferta de recursos no Google Colab de forma dinâmica).
 
 ---
 

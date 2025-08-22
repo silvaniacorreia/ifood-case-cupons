@@ -7,12 +7,24 @@ import matplotlib.pyplot as plt
 def ensure_dir(path: str) -> None:
     """
     Cria um diretório se ele não existir.
+
+    Parâmetros:
+        path (str): Caminho do diretório a ser criado.
+
+    Retorna:
+        None
     """
     os.makedirs(path, exist_ok=True)
 
 def to_pandas_spark(df_spark) -> pd.DataFrame:
     """
-    Converte um DataFrame do Spark para um DataFrame do Pandas, se necessário.
+    Converte um DataFrame Spark para pandas.DataFrame quando necessário.
+
+    Parâmetros:
+        df_spark: DataFrame Spark ou pandas.
+
+    Retorna:
+        pd.DataFrame: DataFrame pandas equivalente ou o objeto original se já for pandas.
     """
     if hasattr(df_spark, "toPandas") and not isinstance(df_spark, pd.DataFrame):
         return df_spark.toPandas()
@@ -21,6 +33,14 @@ def to_pandas_spark(df_spark) -> pd.DataFrame:
 def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
     """
     Salva um DataFrame como um arquivo CSV.
+
+    Parâmetros:
+        df (pd.DataFrame): DataFrame a ser salvo.
+        outdir (str): Diretório de saída.
+        name (str): Nome do arquivo (sem extensão).
+
+    Retorna:
+        str: Caminho completo do arquivo salvo.
     """
     ensure_dir(outdir)
     p = os.path.join(outdir, f"{name}.csv")
@@ -39,10 +59,21 @@ def plot_bars_by_segment(
     y_label: Optional[str] = None,
 ):
     """
-    Plota barras para a comparação entre grupos de controle e tratamento.
+    Plota barras comparativas entre segmentos para controle vs tratamento.
 
-    - labels_map: mapeia nome de coluna -> rótulo amigável (ex: "gmv_user" -> "GMV (mediana)").
-    - y_label: rótulo do eixo y (ex: "Valor (mediana)").
+    Parâmetros:
+        df_or_spark: DataFrame (Spark ou pandas) contendo colunas de segmento e métricas.
+        segment_col (str): Nome da coluna que identifica o segmento.
+        value_cols (List[str]): Colunas métricas a serem plotadas (ex.: ["gmv_user"]).
+        group_col (str): Coluna que indica grupo A/B (padrão: "is_target").
+        title (Optional[str]): Título do gráfico.
+        outdir (Optional[str]): Diretório para salvar a figura.
+        fname (Optional[str]): Nome base do arquivo salvo.
+        labels_map (Optional[dict]): Mapeamento de nomes de coluna para rótulos amigáveis.
+        y_label (Optional[str]): Rótulo do eixo Y.
+
+    Retorna:
+        None (salva figuras em disco se `outdir` e `fname` fornecidos).
     """
     df = to_pandas_spark(df_or_spark)
     segs = sorted(df[segment_col].astype(str).unique().tolist())
@@ -100,7 +131,19 @@ def plot_box_by_segment(
     fname: Optional[str] = None,
 ):
     """
-    Plota um boxplot para a comparação entre grupos de controle e tratamento.
+    Plota um boxplot por segmento, desenhando boxplots para cada segmento/is_target.
+
+    Parâmetros:
+        users_pdf (pd.DataFrame): DataFrame contendo colunas de segmento, is_target e a métrica.
+        segment_col (str): Coluna que identifica o segmento.
+        metric_col (str): Coluna métrica a ser plotada.
+        clip_p (Optional[float]): Quantil para recorte de caudas.
+        title (Optional[str]): Título do gráfico.
+        outdir (Optional[str]): Diretório para salvar a figura.
+        fname (Optional[str]): Nome base do arquivo salvo.
+
+    Retorna:
+        None (salva figura se `outdir` e `fname` fornecidos).
     """
     df = users_pdf.copy()
     df["segment"] = df[segment_col].astype(str)
@@ -140,7 +183,20 @@ def plot_hist_by_segment(
     fname: Optional[str] = None,
 ):
     """
-    Plota um histograma para a comparação entre grupos de controle e tratamento.
+    Plota histogramas por segmento (sobrepostos por is_target).
+
+    Parâmetros:
+        users_pdf (pd.DataFrame): DataFrame com colunas de segmento, is_target e métrica.
+        segment_col (str): Coluna de segmento.
+        metric_col (str): Coluna métrica a ser plotada.
+        bins (int): Número de bins.
+        clip_p (Optional[float]): Quantil para recorte de caudas.
+        title (Optional[str]): Título do gráfico.
+        outdir (Optional[str]): Diretório para salvar figura.
+        fname (Optional[str]): Nome base do arquivo salvo.
+
+    Retorna:
+        None (salva figura se `outdir` e `fname` fornecidos).
     """
     seg_vals = sorted(users_pdf[segment_col].astype(str).unique().tolist())
     for seg in seg_vals:

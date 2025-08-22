@@ -108,6 +108,14 @@ DEFAULT_TZ = "America/Sao_Paulo"
 def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFrame:
     """
     Conforma o DataFrame de pedidos para o esquema desejado.
+
+    Parâmetros:
+        orders (DataFrame): DataFrame Spark lido a partir dos dados brutos de pedidos.
+        business_tz (str): Timezone de negócio usado para conversão de datas (padrão: DEFAULT_TZ).
+
+    Retorna:
+        DataFrame: DataFrame Spark com colunas normalizadas e validações aplicadas (ex.: event_ts_utc,
+                   order_total_amount, merchant geolocations, basket_size, etc.).
     """
     cols = set(orders.columns)
 
@@ -256,7 +264,13 @@ def conform_restaurants(restaurants: DataFrame) -> DataFrame:
 
 def conform_abmap(abmap: DataFrame) -> DataFrame:
     """
-    Conformação do DataFrame de AB Test.
+    Conformação do DataFrame de referência de A/B test.
+
+    Parâmetros:
+        abmap (DataFrame): DataFrame Spark lido a partir dos CSVs do ab_test_ref.
+
+    Retorna:
+        DataFrame: DataFrame Spark com colunas 'customer_id' e 'is_target' (0/1), sem duplicatas.
     """
     df = abmap
     for c in abmap.columns:
@@ -298,7 +312,23 @@ def clean_and_conform(
     verbose: bool = False,                
 ) -> DataFrame:
     """
-    Limpa e conforma os DataFrames de entrada.
+    Limpa, conforma e junta os DataFrames de entrada em um único fato pronto para análise.
+
+    Parâmetros:
+        orders (DataFrame): DataFrame de pedidos bruto.
+        consumers (DataFrame): DataFrame de consumidores bruto.
+        restaurants (DataFrame): DataFrame de restaurantes bruto.
+        abmap (DataFrame): Mapeamento A/B (customer_id -> is_target).
+        business_tz (str): Timezone de negócio (padrão: DEFAULT_TZ).
+        treat_is_target_null_as_control (bool): Se True, substitui is_target nulo por 0.
+        experiment_start/experiment_end (str|None): Janela de experimento (ISO date strings); se None, inferida.
+        auto_infer_window (bool): Se True, tenta inferir janela a partir dos dados.
+        use_quantile_window (bool): Se True, usa quantis 1%-99% para inferência de janela.
+        cache_intermediates (bool): Se True, persiste DataFrames intermediários.
+        verbose (bool): Se True, imprime logs adicionais.
+
+    Retorna:
+        DataFrame: DataFrame Spark resultante após joins e filtragens (fato pronto para análise).
     """
     o = conform_orders(orders, business_tz=business_tz)
     c = conform_consumers(consumers)
@@ -373,6 +403,12 @@ def clean_and_conform(
 def build_orders_silver(df: DataFrame) -> DataFrame:
     """
     Seleciona o conjunto mínimo de colunas normalizadas ao nível de pedido (fato).
+
+    Parâmetros:
+        df (DataFrame): DataFrame Spark já limpo e conformado contendo colunas de pedido e dimensão.
+
+    Retorna:
+        DataFrame: DataFrame Spark reduzido com apenas as colunas essenciais para análise.
     """
     cols = [
         "order_id", "customer_id", "merchant_id",
