@@ -24,7 +24,7 @@
     
       <div class="crossnote markdown-preview  ">
       
-<h1 id="relatório-final--case-ifood-teste-ab-de-cupons">Relatório Final – Case iFood: Teste A/B de Cupons </h1>
+<h1 id="case-ifood-teste-ab-de-cupons">Case iFood: Teste A/B de Cupons </h1>
 <h2 id="1-contexto">1. Contexto </h2>
 <p>O iFood testou uma campanha de cupons com um grupo de usuários selecionados (grupo teste), enquanto outro grupo similar não recebeu o benefício (grupo controle).<br>
 O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o gasto dos usuários, além de verificar a viabilidade financeira da iniciativa.</p>
@@ -33,6 +33,9 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 <li><strong>Mediana:</strong> valor típico por cliente (menos sensível a casos extremos).</li>
 <li><strong>p95:</strong> nível alto esperado (apenas ~5% dos clientes ficam acima disso).</li>
 <li><strong>Heavy users (≥3):</strong> parcela de clientes frequentes.</li>
+<li><strong>Tratamento:</strong> grupo que recebeu o cupom.</li>
+<li><strong>Controle:</strong> grupo que não recebeu o cupom.</li>
+<li><strong>AOV:</strong> ticket médio por pedido.</li>
 </ul>
 <hr>
 <h2 id="2-principais-resultados-da-campanha">2. Principais Resultados da Campanha </h2>
@@ -67,8 +70,8 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 <tr>
 <td style="text-align:right">Com Cupom</td>
 <td style="text-align:right">442676</td>
-<td style="text-align:right">79.8</td>
-<td style="text-align:right">2</td>
+<td style="text-align:right"><strong>79.8★</strong></td>
+<td style="text-align:right"><strong>2★</strong></td>
 <td style="text-align:right">41.00</td>
 <td style="text-align:right">507.19</td>
 <td style="text-align:right">10</td>
@@ -77,6 +80,10 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Notas:</strong><br>
+<strong>★</strong> = diferença estatisticamente significativa vs. Controle (teste <strong>Mann–Whitney</strong>, p &lt; 0,05).</p>
+</blockquote>
 <ul>
 <li><strong>Pedidos por usuário</strong>: aumento de <strong>+100%</strong> no grupo que recebeu o cupom.</li>
 <li><strong>GMV por usuário (valor gasto no app)</strong>: crescimento de <strong>+20%</strong> com o cupom.</li>
@@ -156,6 +163,11 @@ Isso reforça o cupom como alavanca de engajamento e hábito de consumo, e não 
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Break-even (geral do A/B)</strong><br>
+Precisa: <strong>R$ 13,04</strong> | Entregou: <strong>R$ 17,13</strong> | Gap: <strong>+R$ 4,09</strong><br>
+<strong>Lucro por usuário:</strong> <strong>R$ 0,94</strong> | <strong>Status:</strong> <strong>OK</strong></p>
+</blockquote>
 <p><strong>Nota sobre o LTV:</strong><br>
 O cálculo do LTV (Lifetime Value) é normalmente utilizado em horizontes mais longos, acompanhando a evolução do cliente ao longo de vários meses ou anos. No nosso caso, os dados disponíveis cobrem apenas o período do experimento, de modo que o LTV foi aqui estimado a partir desse intervalo restrito.<br>
 Mesmo assim, a métrica foi incluída porque oferece uma boa referência de potencial de retorno por cliente e permite compará-lo com o CAC. Ou seja, ainda que a estimativa seja mais conservadora e não capture todo o ciclo de vida real do cliente, ela ajuda a reforçar a análise de viabilidade financeira no contexto deste case.</p>
@@ -224,65 +236,72 @@ Cada real gasto com cupons gerou aproximadamente <strong>R$3,50 de valor de clie
 </li>
 <li><strong>Novo vs recorrente:</strong> sinalizamos <strong>novo</strong> quando disponível, porém, na base utilizada, o volume de “novo” é residual (amostra focada em quem já comprou). Mantemos como <strong>exploratório</strong> até incorporar usuários que ainda não pediram (para medir 1ª compra de fato).</li>
 </ul>
-<p><strong>Inserir figuras de referência (médias para visão geral e box/hist para forma da distribuição):</strong></p>
-<ul>
-<li>
-<p><strong>Barras – médias por segmento:</strong></p>
-<ul>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_heavy.png</code>]</li>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_new.png</code>]</li>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/bars_platform.png</code>]</li>
-</ul>
-</li>
-<li>
-<p><strong>Boxplots – heavy_user (com e sem winsor 1%):</strong></p>
-<ul>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/box_heavy.png</code>]</li>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/box_heavy_w.png</code>]</li>
-</ul>
-</li>
-<li>
-<p><strong>Histogramas – por segmento (exploratório):</strong></p>
-<ul>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/hist_new.png</code>]</li>
-<li>[INSERIR FIGURA: <code>outputs/figs_segments/hist_platform.png</code>]</li>
-</ul>
-</li>
-</ul>
 <hr>
 <h3 id="32-resultados-do-ab-por-segmento-e-recomendações">3.2. Resultados do A/B por segmento e recomendações </h3>
 <p><strong>1) Frequência (Heavy vs Não-heavy)</strong></p>
-<p><strong>Tabela 3 – Medianas por segmento (Heavy vs Não-heavy)</strong></p>
+<p><strong>Tabela 3 – Medianas por segmento (Heavy vs Não-heavy) + métricas financeiras</strong></p>
 <table>
 <thead>
 <tr>
 <th>Segmento</th>
-<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">Usuários (Trat., amostra)</th>
+<th style="text-align:right">Usuários (Trat., base)</th>
 <th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
 <th style="text-align:right">Δ GMV</th>
 <th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
 <th style="text-align:right">Δ Pedidos</th>
+<th style="text-align:right">AOV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ AOV</th>
+<th style="text-align:right">Receita inc. total (R$)</th>
+<th style="text-align:right">Custo total (R$)</th>
+<th style="text-align:right">Lucro inc. total (R$)</th>
+<th style="text-align:right">Lucro por usuário (R$)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Não-heavy</td>
 <td style="text-align:right">34.929</td>
+<td style="text-align:right">279.181</td>
 <td style="text-align:right">47,00 → 50,00</td>
-<td style="text-align:right"><strong>+3,00</strong></td>
+<td style="text-align:right"><strong>+3,00</strong>★</td>
 <td style="text-align:right">1 → 1</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">40,09 → 40,45</td>
+<td style="text-align:right"><strong>+0,37</strong></td>
+<td style="text-align:right">200.754</td>
+<td style="text-align:right">837.543</td>
+<td style="text-align:right"><strong>-636.789</strong></td>
+<td style="text-align:right"><strong>-2,28</strong></td>
 </tr>
 <tr>
 <td>Heavy</td>
 <td style="text-align:right">20.439</td>
+<td style="text-align:right">163.495</td>
 <td style="text-align:right">205,60 → 208,20</td>
 <td style="text-align:right"><strong>+2,60</strong></td>
 <td style="text-align:right">5 → 5</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">42,30 → 42,30</td>
+<td style="text-align:right"><strong>+0,00</strong></td>
+<td style="text-align:right">33.120</td>
+<td style="text-align:right">490.485</td>
+<td style="text-align:right"><strong>-457.365</strong></td>
+<td style="text-align:right"><strong>-2,80</strong></td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Notas:</strong><br>
+• Valores marcados com <strong>★</strong> indicam <strong>diferença estatisticamente significativa</strong> entre Tratamento e Controle dentro do segmento (teste <strong>Mann–Whitney</strong>, p &lt; 0,05). Em Não-heavy, embora a <strong>mediana de pedidos</strong> permaneça 1→1, o teste indica diferença na <strong>distribuição</strong> de pedidos.<br>
+• As <strong>medianas</strong> (GMV/pedidos/AOV) foram calculadas sobre <strong>amostra</strong>; os “Usuários (Trat., amostra)” refletem o tamanho coletado.<br>
+• As <strong>métricas financeiras</strong> (receita, custo, lucro, lucro por usuário) foram calculadas <strong>sobre 100% da base</strong> por segmento; por isso mostramos também “Usuários (Trat., base)”.</p>
+</blockquote>
+<blockquote>
+<p><strong>Break-even (Frequência)</strong><br>
+<strong>Não-heavy:</strong> Precisa <strong>R$ 13,04</strong> | Entregou <strong>R$ 3,13</strong> | Gap <strong>−R$ 9,91</strong> | <strong>Lucro/usuário −R$ 2,28</strong> → <strong>NEG</strong><br>
+<strong>Heavy:</strong> Precisa <strong>R$ 13,04</strong> | Entregou <strong>R$ 0,88</strong> | Gap <strong>−R$ 12,16</strong> | <strong>Lucro/usuário −R$ 2,80</strong> → <strong>NEG</strong></p>
+</blockquote>
 <p><strong>Figura 4 - Mediana GMV/AOV/Pedidos por usuário (Heavy vs Não-heavy)</strong></p>
 <p>a) GMV por usuário<br>
 <img src="assets/segments/bars_heavy_medianas_gmv_user.png" alt="Bars GMV"><br>
@@ -290,58 +309,130 @@ b) AOV por usuário<br>
 <img src="assets/segments/bars_heavy_medianas_aov.png" alt="Bars AOV"><br>
 c) Pedidos por usuário<br>
 <img src="assets/segments/bars_heavy_medianas_pedidos_user.png" alt="Bars Pedidos"></p>
+<p>O cupom <strong>não altera de forma relevante o comportamento típico</strong> (medianas) dentro de cada grupo:</p>
 <ul>
-<li><strong>Não-heavy</strong>: ganho claro em <strong>GMV/usuário e pedidos/usuário</strong> com o cupom; AOV estável.</li>
-<li><strong>Heavy</strong>: efeito marginal (quase nulo) dentro do grupo.</li>
-<li>O grupo tratado tem <strong>mais heavy users</strong> (~37% vs ~31%), o que também puxa a média geral para cima (efeito de composição).</li>
-<li><strong>Ações sugeridas:</strong>
-<ul>
-<li><strong>Direcionar</strong> o cupom em <strong>não-heavy</strong> (1–2 pedidos) para conduzir ao 2º→3º pedido.</li>
-<li><strong>Reduzir frequência/valor</strong> do cupom para <strong>heavy</strong> (≥ 3) para evitar canibalização.</li>
+<li><strong>Não-heavy</strong>: GMV/usuário mediano sobe <strong>+R$3,00</strong> (47,0 → 50,0), com <strong>pedidos medianos estáveis</strong> (1 → 1) e <strong>AOV praticamente estável</strong> (+R$0,37).</li>
+<li><strong>Heavy (≥3)</strong>: <strong>efeito marginal</strong> em GMV mediano (<strong>+R$2,60</strong>; 205,6 → 208,2); <strong>pedidos medianos estáveis</strong> (5 → 5) e <strong>AOV estável</strong>.</li>
 </ul>
+<ul>
+<li>
+<p><strong>Composição importa</strong><br>
+O grupo Tratamento tem <strong>mais heavy</strong> (<strong>~37%</strong> vs <strong>~31%</strong> no Controle, +6 p.p.). Essa diferença de mix <strong>eleva as médias globais</strong> do tratado mesmo quando as <strong>medianas por grupo mudam pouco</strong>.</p>
 </li>
-<li><strong>KPI alvo:</strong> aumento da <strong>taxa de heavy users</strong> (≥ 3) e do <strong>GMV mediano</strong> entre não-heavy, com AOV estável.</li>
+<li>
+<p><strong>Implicações financeiras</strong><br>
+Com as premissas atuais (23% de take rate, cupom R$10, resgate 30%), o <strong>lucro incremental por usuário</strong> é <strong>negativo</strong> em ambos:</p>
+</li>
+</ul>
+<ul>
+<li>
+<p><strong>Não-heavy:</strong> <strong>−R$2,28/usuário</strong> (total −R$636,8 mil).</p>
+</li>
+<li>
+<p><strong>Heavy:</strong> <strong>−R$2,80/usuário</strong> (total −R$457,4 mil).<br>
+→ Sinal de <strong>canibalização</strong>/ineficiência com o <strong>valor</strong> e/ou <strong>gatilho</strong> atuais quando olhamos só por frequência.</p>
+</li>
+<li>
+<p>O cupom <strong>não move a mediana de pedidos</strong> (1 → 1 em não-heavy; 5 → 5 em heavy); o ganho que existe acontece <strong>fora do centro</strong> (cauda), insuficiente para pagar o custo em cada grupo isolado.</p>
+</li>
+<li>
+<p>Como a <strong>composição</strong> do Tratamento tem mais heavy, o agregado pode parecer melhor, mas a <strong>política por frequência pura</strong> (heavy vs não-heavy) <strong>não se paga</strong> com o desenho atual.</p>
+</li>
+</ul>
+<p><strong>Ações sugeridas:</strong></p>
+<ol>
+<li><strong>Não-heavy (1–2 pedidos):</strong> manter cupom <strong>direcionado</strong>, mas com <strong>gatilho de progressão</strong> (ex.: após o 1º pedido, ou após X dias sem compra) para empurrar ao <strong>3º pedido</strong>.</li>
+<li><strong>Heavy (≥3):</strong> <strong>reduzir valor/frequência</strong> do cupom (ou condicionar a novos comportamentos, p.ex., categorias menos frequentes), <strong>evitando canibalização</strong>.</li>
+<li><strong>Rebalancear a composição</strong> em próximos testes: usar <strong>randomização estratificada por heavy</strong> ou <strong>reponderar</strong> o resultado global para o mix do Controle, deixando o efeito mais comparável.</li>
+</ol>
+<p><strong>KPIs a acompanhar:</strong></p>
+<ul>
+<li><strong>% de heavy users (≥3)</strong> no período (progressão de frequência).</li>
+<li><strong>GMV mediano por usuário</strong> em <strong>não-heavy</strong>.</li>
+<li><strong>Lucro incremental por usuário</strong> por grupo (objetivo: ≥ 0 sob as premissas vigentes).</li>
 </ul>
 <p><strong>2) Plataforma (Android / iOS / Desktop)</strong></p>
-<p><strong>Tabela 4 – Medianas por segmento (Plataforma)</strong></p>
+<p><strong>Tabela 4 – Medianas por segmento (Plataforma) + métricas financeiras</strong></p>
 <table>
 <thead>
 <tr>
 <th>Plataforma</th>
-<th style="text-align:right">Usuários (Trat.)</th>
+<th style="text-align:right">Usuários (Trat., amostra)</th>
+<th style="text-align:right">Usuários (Trat., base)</th>
 <th style="text-align:right">GMV mediano (Ctrl → Trat)</th>
 <th style="text-align:right">Δ GMV</th>
 <th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
 <th style="text-align:right">Δ Pedidos</th>
+<th style="text-align:right">AOV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ AOV</th>
+<th style="text-align:right">Receita inc. total (R$)</th>
+<th style="text-align:right">Custo total (R$)</th>
+<th style="text-align:right">Lucro inc. total (R$)</th>
+<th style="text-align:right">Lucro por usuário (R$)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Android</td>
 <td style="text-align:right">23.632</td>
+<td style="text-align:right">189.796</td>
 <td style="text-align:right">59,00 → 69,80</td>
-<td style="text-align:right"><strong>+10,80</strong></td>
+<td style="text-align:right"><strong>+10,80</strong>★</td>
 <td style="text-align:right">1 → 2</td>
-<td style="text-align:right"><strong>+1</strong></td>
+<td style="text-align:right"><strong>+1</strong>★</td>
+<td style="text-align:right">38,57 → 38,67</td>
+<td style="text-align:right"><strong>+0,10</strong></td>
+<td style="text-align:right">609.238</td>
+<td style="text-align:right">569.388</td>
+<td style="text-align:right"><strong>39.850</strong></td>
+<td style="text-align:right"><strong>0,21</strong></td>
 </tr>
 <tr>
 <td>Desktop</td>
 <td style="text-align:right">7.939</td>
+<td style="text-align:right">63.370</td>
 <td style="text-align:right">63,20 → 73,60</td>
-<td style="text-align:right"><strong>+10,40</strong></td>
+<td style="text-align:right"><strong>+10,40</strong>★</td>
 <td style="text-align:right">1 → 2</td>
-<td style="text-align:right"><strong>+1</strong></td>
+<td style="text-align:right"><strong>+1</strong>★</td>
+<td style="text-align:right">39,33 → 39,43</td>
+<td style="text-align:right"><strong>+0,10</strong></td>
+<td style="text-align:right">305.302</td>
+<td style="text-align:right">190.110</td>
+<td style="text-align:right"><strong>115.192</strong></td>
+<td style="text-align:right"><strong>1,82</strong></td>
 </tr>
 <tr>
 <td>iOS</td>
 <td style="text-align:right">23.336</td>
+<td style="text-align:right">185.497</td>
 <td style="text-align:right">77,80 → 94,00</td>
-<td style="text-align:right"><strong>+16,20</strong></td>
-<td style="text-align:right">1 → 2</td>
-<td style="text-align:right"><strong>+1</strong></td>
+<td style="text-align:right"><strong>+16,20</strong>★</td>
+<td style="text-align:right">2 → 2</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">44,90 → 45,00</td>
+<td style="text-align:right"><strong>+0,10</strong></td>
+<td style="text-align:right">808.417</td>
+<td style="text-align:right">556.491</td>
+<td style="text-align:right"><strong>251.926</strong></td>
+<td style="text-align:right"><strong>1,36</strong></td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Notas:</strong><br>
+• Valores marcados com <strong>★</strong> indicam <strong>diferença estatisticamente significativa</strong> entre Tratamento e Controle dentro do segmento (teste <strong>Mann–Whitney</strong>, p &lt; 0,05). <strong>AOV</strong> não apresentou diferenças significativas nos segmentos mostrados.<br>
+• As <strong>medianas</strong> (GMV/pedidos/AOV) vêm da <strong>amostra</strong>; “Usuários (Trat., amostra)” reflete o tamanho coletado.<br>
+• As <strong>métricas financeiras</strong> foram calculadas <strong>sobre 100% da base</strong>; por isso mostramos “Usuários (Trat., base)”.<br>
+• <strong>Windows Phone:</strong> este segmento foi <strong>omitido</strong> da tabela por ter <strong>pouquíssimos usuários</strong> no Tratamento/Controle, o que gera <strong>estimativas instáveis</strong> (alta variância) e risco de leitura equivocada.</p>
+</blockquote>
+<blockquote>
+<p><strong>Break-even (Plataforma)</strong><br>
+<strong>Desktop:</strong> Precisa <strong>R$ 13,04</strong> | Entregou <strong>R$ 20,95</strong> | Gap <strong>+R$ 7,91</strong> | <strong>Lucro/usuário R$ 1,82</strong> → <strong>OK</strong><br>
+<strong>iOS:</strong> Precisa <strong>R$ 13,04</strong> | Entregou <strong>R$ 18,95</strong> | Gap <strong>+R$ 5,91</strong> | <strong>Lucro/usuário R$ 1,36</strong> → <strong>OK</strong><br>
+<strong>Android:</strong> Precisa <strong>R$ 13,04</strong> | Entregou <strong>R$ 13,96</strong> | Gap <strong>+R$ 0,91</strong> | <strong>Lucro/usuário R$ 0,21</strong> → <strong>No limite</strong><br>
+<strong>Windows Phone:</strong> Entregou <strong>R$ 10,46</strong> | Gap <strong>−R$ 2,58</strong> | <strong>Lucro/usuário −R$ 0,59</strong> → <strong>NEG (N pequeno)</strong></p>
+</blockquote>
 <p><strong>Figura 5 - Mediana GMV/AOV/Pedidos por usuário (Plataforma)</strong></p>
 <p>a) GMV por usuário<br>
 <img src="assets/segments/bars_platform_medianas_gmv_user.png" alt="Bars GMV"></p>
@@ -352,18 +443,36 @@ c) Pedidos por usuário<br>
 <p><strong>Figura 6 - Heavy Users por Plataforma</strong><br>
 <img src="assets/segments/bars_platform_heavy_rate.png" alt="Bars Heavy Users"></p>
 <ul>
-<li><strong>Desktop</strong> e <strong>iOS</strong> respondem melhor (maior ganho por usuário); <strong>Android</strong> responde, mas com retorno menor.</li>
-<li>Em mediana, Android e Desktop avançam de <strong>1→2 pedidos</strong>; iOS aumenta GMV mediano.</li>
-<li><strong>Ações sugeridas:</strong>
-<ul>
-<li><strong>Priorizar</strong> campanhas em <strong>Desktop e iOS</strong> (melhor retorno).</li>
-<li>Em <strong>Android</strong>, testar <strong>cupom menor</strong> ou <strong>gatilhos mais precisos</strong> (ex.: ofertar no 2º carrinho ou após período sem compra), para elevar eficiência.</li>
-</ul>
+<li>
+<p><strong>Android:</strong> em <strong>mediana</strong>, GMV/usuário <strong>+R$10,80</strong> (59,0 → 69,8), <strong>pedidos</strong> sobem <strong>1 → 2</strong>, <strong>AOV</strong> estável <strong>(+R$0,10)</strong>.<br>
+<strong>Heavy rate</strong>: ~<strong>+6,1 p.p.</strong> (28,6% → 34,7%).<br>
+<strong>Financeiro (100% da base):</strong> <strong>lucro/usuário ≈ R$ +0,21</strong>.</p>
 </li>
-<li><strong>KPI alvo:</strong> <strong>ROI por usuário</strong> do segmento ≥ 0 e crescimento do <strong>p95</strong> sem queda de AOV.</li>
+<li>
+<p><strong>Desktop:</strong> em <strong>mediana</strong>, GMV/usuário <strong>+R$10,40</strong> (63,2 → 73,6), <strong>pedidos</strong> sobem <strong>1 → 2</strong>, <strong>AOV</strong> estável <strong>(+R$0,10)</strong>.<br>
+<strong>Heavy rate</strong>: ~<strong>+6,7 p.p.</strong> (28,9% → 35,6%).<br>
+<strong>Financeiro:</strong> <strong>lucro/usuário ≈ R$ +1,82</strong>.</p>
+</li>
+<li>
+<p><strong>iOS:</strong> em <strong>mediana</strong>, GMV/usuário <strong>+R$16,20</strong> (77,8 → 94,0), <strong>pedidos</strong> estáveis <strong>(2 → 2)</strong>, <strong>AOV</strong> estável <strong>(+R$0,10)</strong>.<br>
+<strong>Heavy rate</strong>: ~<strong>+6,7 p.p.</strong> (33,0% → 39,7%).<br>
+<strong>Financeiro:</strong> <strong>lucro/usuário ≈ R$ +1,36</strong>.</p>
+</li>
+</ul>
+<p><strong>Ações sugeridas:</strong></p>
+<ul>
+<li><strong>Priorizar</strong> esforço em <strong>Desktop</strong> e <strong>iOS</strong> (melhor retorno por usuário, com AOV estável).</li>
+<li>Em <strong>Android</strong>, manter a alavanca, mas <strong>testar cupom menor e/ou gatilhos mais precisos</strong> (ex.: 2º carrinho, pós-hiato) para <strong>elevar o lucro por usuário</strong>.</li>
+</ul>
+<p><strong>KPIs a acompanhar:</strong></p>
+<ul>
+<li><strong>lucro/usuário ≥ 0</strong> por plataforma</li>
+<li><strong>GMV mediano</strong> por usuário</li>
+<li><strong>% de heavy users (≥3)</strong></li>
+<li><strong>taxa de uso do cupom</strong>, mantendo <strong>AOV estável</strong>.</li>
 </ul>
 <p><strong>3) RFM (111–555)</strong></p>
-<p><strong>Tabela 5 – RFM (Top 5 por população do Tratado)</strong></p>
+<p><strong>Tabela 5 – RFM (Top 5 por população do Tratado, medianas + AOV)</strong></p>
 <table>
 <thead>
 <tr>
@@ -373,6 +482,8 @@ c) Pedidos por usuário<br>
 <th style="text-align:right">Δ GMV</th>
 <th style="text-align:right">Pedidos medianos (Ctrl → Trat)</th>
 <th style="text-align:right">Δ Pedidos</th>
+<th style="text-align:right">AOV mediano (Ctrl → Trat)</th>
+<th style="text-align:right">Δ AOV</th>
 </tr>
 </thead>
 <tbody>
@@ -383,6 +494,8 @@ c) Pedidos por usuário<br>
 <td style="text-align:right"><strong>+5,9</strong></td>
 <td style="text-align:right">9 → 9</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">47,10 → 46,94</td>
+<td style="text-align:right"><strong>−0,16</strong></td>
 </tr>
 <tr>
 <td>111</td>
@@ -391,6 +504,8 @@ c) Pedidos por usuário<br>
 <td style="text-align:right"><strong>+0,7</strong></td>
 <td style="text-align:right">1 → 1</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">25,20 → 25,90</td>
+<td style="text-align:right"><strong>+0,70</strong></td>
 </tr>
 <tr>
 <td>112</td>
@@ -399,6 +514,8 @@ c) Pedidos por usuário<br>
 <td style="text-align:right"><strong>+0,5</strong></td>
 <td style="text-align:right">1 → 1</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">44,00 → 44,50</td>
+<td style="text-align:right"><strong>+0,50</strong></td>
 </tr>
 <tr>
 <td>211</td>
@@ -407,6 +524,8 @@ c) Pedidos por usuário<br>
 <td style="text-align:right"><strong>−0,1</strong></td>
 <td style="text-align:right">1 → 1</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">25,10 → 25,00</td>
+<td style="text-align:right"><strong>−0,10</strong></td>
 </tr>
 <tr>
 <td>455</td>
@@ -415,19 +534,34 @@ c) Pedidos por usuário<br>
 <td style="text-align:right"><strong>−10,8</strong></td>
 <td style="text-align:right">7 → 7</td>
 <td style="text-align:right">0</td>
+<td style="text-align:right">46,72 → 45,64</td>
+<td style="text-align:right"><strong>−1,08</strong></td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Notas:</strong><br>
+• A grade RFM tem <strong>muitas células</strong> (até <strong>125</strong>). Várias têm <strong>N pequeno</strong>, o que torna estimativas de <strong>ROI voláteis</strong>.<br>
+• O objetivo da RFM aqui é <strong>direcionamento</strong> (quem merece mais/menos incentivo).<br>
+• As <strong>medianas</strong> (GMV/pedidos/AOV) vêm da <strong>amostra</strong>; “Usuários (Trat., amostra)” reflete o tamanho coletado.<br>
+• <strong>Top-5 por população</strong>: não houve diferenças estatisticamente significativas entre Tratamento e Controle nas células apresentadas (Mann–Whitney, p ≥ 0,05).</p>
+</blockquote>
 <ul>
-<li>Dentro de cada célula RFM, o ganho tende a ser pequeno; o aumento global vem da <strong>maior participação</strong> de células de alto valor no grupo tratado (mix).</li>
-<li><strong>Ações sugeridas:</strong>
-<ul>
-<li><strong>Baixo RFM (11*, 21*, 31*)</strong>: cupom mais <strong>agressivo</strong> para gerar 2º e 3º pedidos.</li>
-<li><strong>Médio RFM (4*4, 45*)</strong>: cupom <strong>moderado</strong>, orientado a frequência.</li>
-<li><strong>Alto RFM (54*, 55*)</strong>: cupom <strong>baixo/ocasional</strong>, evitando gastos onde ganhos já existem.</li>
+<li>Dentro de cada célula, as mudanças em <strong>medianas</strong> são, em geral, <strong>pequenas</strong> (Δ GMV mediano baixo; <strong>Δ Ped mediano = 0</strong> em todas as top-5).</li>
+<li>Há células de <strong>alto valor</strong> (ex.: <strong>555</strong>) com ganho discreto de GMV mediano, e outras com <strong>Δ negativo</strong> (ex.: <strong>455</strong>), sugerindo <strong>canibalização/ineficiência</strong> em partes da grade.</li>
+<li>O ganho global observado no agregado vem muito de <strong>composição de mix</strong> (maior participação de células de valor alto no Tratamento) e não de grandes mudanças “dentro” de cada célula.</li>
 </ul>
-</li>
-<li><strong>KPI alvo:</strong> progressão de faixas (ex.: 11*→12*/13*; 2*→3*), aumento de <strong>frequência mediana</strong> nas faixas baixas.</li>
+<p><strong>Ações sugeridas</strong></p>
+<ul>
+<li><strong>Baixo RFM (11*, 21*, 31*)</strong>: cupom <strong>mais agressivo</strong> e com <strong>gatilhos de progressão</strong> (empurrar <strong>1→2→3</strong> pedidos).</li>
+<li><strong>Médio RFM (4*4, 45*)</strong>: cupom <strong>moderado</strong>, focado em <strong>frequência</strong> (evitar <strong>Δ AOV</strong> negativo).</li>
+<li><strong>Alto RFM (54*, 55*)</strong>: cupom <strong>baixo/ocasional</strong> ou <strong>condicionado</strong> (categorias novas, horários frios), para <strong>evitar canibalização</strong>; atenção às células com <strong>Δ GMV/AOV negativos</strong> (ex.: <strong>455</strong>).</li>
+</ul>
+<p><strong>KPIs a acompanhar:</strong></p>
+<ul>
+<li><strong>Progressão de faixa RFM</strong> (movimento das caixinhas de baixo → médio → alto).</li>
+<li><strong>Frequência mediana</strong> nas faixas baixas.</li>
+<li><strong>Δ GMV mediano ≥ 0</strong> e <strong>AOV estável</strong> dentro das células priorizadas.</li>
 </ul>
 <p><strong>4) Novo vs Recorrente (limitação atual)</strong></p>
 <p><strong>Tabela 6 – Medianas (Novo vs Recorrente)</strong></p>
@@ -454,22 +588,110 @@ c) Pedidos por usuário<br>
 </tbody>
 </table>
 <ul>
-<li><strong>O que vimos:</strong> o sinal de “novo” é residual na amostra (quase todos já compraram anteriormente), então a “conversão=1,0” é espúria.</li>
+<li><strong>O que vimos:</strong> clientes novos não existem na amostra, pois a base completa contém apenas usuários com ao menos um pedido anterior ao período de análise, então a “conversão=1,0” é espúria.</li>
 <li><strong>O que fazer:</strong> incluir <strong>usuários sem pedido</strong> na base de teste (grupo de controle e tratado) para medir <strong>1ª compra</strong>; só então definir política específica para “novos”.</li>
 </ul>
 <hr>
-<h3 id="33-próximos-passos-de-produto-teste-direcionado">3.3. Próximos passos de produto (teste direcionado) </h3>
-<ol>
-<li><strong>Teste A/B estratificado</strong> por <strong>heavy_user</strong> e <strong>plataforma</strong>, com <strong>valor de cupom variável</strong> (ex.: Android R$6–8; iOS/Desktop R$10–12).</li>
-<li><strong>Gatilho de progressão</strong> para não-heavy (ofertar após o 1º ou 2º pedido, ou após X dias sem compra).</li>
-<li><strong>Métricas de sucesso</strong>:
+<h3 id="33-recomendações-para-segmentação">3.3. Recomendações para Segmentação </h3>
+<p><strong>Frequência (Heavy vs Não-heavy)</strong></p>
 <ul>
-<li>Primárias: <strong>GMV mediano por usuário</strong> e <strong>taxa de heavy users</strong>, por segmento.</li>
-<li>Financeiras: <strong>Lucro incremental total</strong> e <strong>ROI(%)</strong> por segmento.</li>
+<li><strong>Não-heavy (1–2 pedidos):</strong> manter cupom <strong>direcionado</strong> com <strong>gatilhos de progressão</strong> (pós-1º/2º pedido; reativação após X dias).</li>
+<li><strong>Heavy (≥3):</strong> cupom <strong>baixo/ocasional</strong> ou <strong>condicionado</strong> (categorias/horários frios), para <strong>evitar canibalização</strong>.</li>
 </ul>
-</li>
-<li><strong>Guardrails</strong>: manter <strong>AOV estável</strong> e não aumentar cancelamentos.</li>
-</ol>
+<p><strong>Plataforma</strong></p>
+<ul>
+<li><strong>Desktop e iOS:</strong> <strong>priorizar</strong> (boa resposta em mediana); manter <em>capping</em> para não diluir margem.</li>
+<li><strong>Android:</strong> manter a alavanca, mas <strong>testar cupom menor</strong> e/ou <strong>mínimo de carrinho</strong> (ex.: “R$10 off ≥ R$40”) e <strong>gatilhos</strong> (2º carrinho, reativação 7–14 dias, abandono).</li>
+</ul>
+<p><strong>RFM</strong></p>
+<ul>
+<li>Usar <strong>tiers agregados</strong> (Baixo / Médio / Alto) em vez de 125 células.</li>
+<li><strong>Baixo/Médio:</strong> incentivo para <strong>frequência</strong> (1→2→3). <strong>Alto:</strong> incentivo <strong>seletivo/ocasional</strong>, evitando gastar onde o hábito já existe.</li>
+</ul>
+<p><strong>Métricas por segmento</strong></p>
+<ul>
+<li><strong>GMV mediano por usuário</strong> e <strong>% heavy (≥3)</strong>; monitorar <strong>p95</strong> para oportunidades de topo sem queda de <strong>AOV</strong>.</li>
+</ul>
+<hr>
+<h2 id="4-próximos-passos">4. Próximos Passos </h2>
+<p><strong>Como interpretar o break-even</strong><br>
+Com as premissas atuais (take rate 23%, cupom R$10, uso 30%), o cupom <strong>só se paga</strong> se cada usuário tratado gerar <strong>≥ R$ 13,04</strong> de <strong>vendas extras</strong> no período.</p>
+<p><strong>Quadro – Break-even por célula (resumo)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Célula</th>
+<th style="text-align:right">Precisa</th>
+<th style="text-align:right">Entregou</th>
+<th style="text-align:right">Gap</th>
+<th style="text-align:right">Lucro/usuário</th>
+<th style="text-align:center">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geral</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">17,13</td>
+<td style="text-align:right">+4,09</td>
+<td style="text-align:right">0,94</td>
+<td style="text-align:center">OK</td>
+</tr>
+<tr>
+<td>Android</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">13,96</td>
+<td style="text-align:right">+0,91</td>
+<td style="text-align:right">0,21</td>
+<td style="text-align:center">No limite</td>
+</tr>
+<tr>
+<td>Desktop</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">20,95</td>
+<td style="text-align:right">+7,91</td>
+<td style="text-align:right">1,82</td>
+<td style="text-align:center">OK</td>
+</tr>
+<tr>
+<td>iOS</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">18,95</td>
+<td style="text-align:right">+5,91</td>
+<td style="text-align:right">1,36</td>
+<td style="text-align:center">OK</td>
+</tr>
+<tr>
+<td>Não-heavy</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">3,13</td>
+<td style="text-align:right">−9,91</td>
+<td style="text-align:right">−2,28</td>
+<td style="text-align:center">NEG</td>
+</tr>
+<tr>
+<td>Heavy</td>
+<td style="text-align:right">13,04</td>
+<td style="text-align:right">0,88</td>
+<td style="text-align:right">−12,16</td>
+<td style="text-align:right">−2,80</td>
+<td style="text-align:center">NEG</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regras práticas (farol sem emojis)</strong></p>
+<ul>
+<li><strong>OK</strong>: <em>Entregou</em> ≥ <strong>R$ 13,04</strong> <strong>e</strong> <strong>Lucro/usuário ≥ 0</strong> → <strong>manter/escala</strong>.</li>
+<li><strong>No limite</strong>: diferença para <strong>R<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>13</mn><mo separator="true">,</mo><mn>04</mn><mo>∗</mo><mo>∗</mo><mo>&lt;</mo><mo>∗</mo><mo>∗</mo><mi>R</mi></mrow><annotation encoding="application/x-tex">13,04** &lt; **R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">13</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">04</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.5782em;vertical-align:-0.0391em;"></span><span class="mord">∗</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&lt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.4653em;"></span><span class="mord">∗</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span></span></span></span> 2,00</strong> → <strong>ajustar</strong> (valor menor, mínimo de carrinho, gatilhos).</li>
+<li><strong>NEG</strong>: <em>Entregou</em> &lt; <strong>R$ 13,04</strong> → <strong>pausar ou recalibrar</strong>.<br>
+<strong>Checkpoints:</strong> avaliar <strong>semanal/quinzenal</strong>; se uma célula ficar <strong>NEG por 2 leituras seguidas</strong> com <strong>N tratado ≥ 1.000</strong>, <strong>suspender</strong> até novo desenho.</li>
+</ul>
+<p><strong>Sinalização de ação</strong></p>
+<ul>
+<li><strong>Escalar</strong>: <strong>Desktop</strong> e <strong>iOS</strong> (boa folga sobre o break-even).</li>
+<li><strong>Calibrar</strong>: <strong>Android</strong> (cupom menor e/ou mínimo de carrinho; gatilhos de intenção/reativação; foco em não-heavy).</li>
+<li><strong>Restringir</strong>: <strong>Heavy</strong> (ocasional/condicional) e <strong>Windows Phone</strong> (N pequeno e negativo).</li>
+</ul>
 
       </div>
       

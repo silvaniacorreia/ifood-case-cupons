@@ -61,7 +61,8 @@ O objetivo foi analisar um **teste A/B de cupons**, avaliando impacto em engajam
    * **ETL** (limpeza, joins, normalizações).
    * **Análise A/B** com métricas e testes estatísticos.
    * **Análise financeira** (ROI, LTV/CAC).
-   * **Segmentação de usuários** e cálculo de break-even.
+   * **Segmentação de usuários** (frequência, plataforma, RFM).
+   * **Cálculo de break-even** e projeção de margem incremental.
 
 > ⏱️ O processamento pode levar alguns minutos devido ao tamanho dos arquivos.
 

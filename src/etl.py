@@ -1,12 +1,3 @@
-# Funções de ETL: ingestão, limpeza, normalização (timezone/PII), joins e agregações
-"""
-Funções principais para o pipeline ETL, incluindo:
-- Leitura de dados brutos (JSON, CSV)
-- Limpeza e conformidade de dados
-- Joins e agregações
-- Normalização de timestamps
-"""
-
 from __future__ import annotations
 import os
 import datetime as dt
@@ -16,10 +7,8 @@ import gzip, json
 
 from pyspark.sql import DataFrame, functions as F
 from pyspark.sql.types import ArrayType, MapType, StringType
-from pyspark.sql.functions import broadcast
 
-
-from src.checks import preflight, sniff_orders_format, list_valid_ab_csvs
+from src.checks import preflight, list_valid_ab_csvs
 
 def _parse_ts_any(colname: str) -> F.Column:
     """
@@ -40,7 +29,6 @@ def _parse_ts_any(colname: str) -> F.Column:
         F.to_timestamp(c)  
     )
 
-# ---------- Leitura dos insumos ----------
 
 def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, DataFrame]:
     """
@@ -80,7 +68,6 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
         else:
             orders = spark.read.json(orders_path)
 
-        # Gravamos shards para leituras subsequentes (evita reler o .gz grande)
         try:
             if not orders_sharded.exists():
                 print("[ETL] Salvando shards de orders em:", orders_sharded)
@@ -116,10 +103,12 @@ def load_raw(spark, raw_dir: str) -> Tuple[DataFrame, DataFrame, DataFrame, Data
     return orders, consumers, restaurants, abmap
 
 # ---------- Conformizações por tabela ----------
-
 DEFAULT_TZ = "America/Sao_Paulo"  
 
 def conform_orders(orders: DataFrame, business_tz: str = DEFAULT_TZ) -> DataFrame:
+    """
+    Conforma o DataFrame de pedidos para o esquema desejado.
+    """
     cols = set(orders.columns)
 
     def col_or_null(name, cast_type=None, lower=False):
@@ -293,8 +282,6 @@ def conform_abmap(abmap: DataFrame) -> DataFrame:
     )
     return df
 
-# ---------- Montagem do dataset unificado ----------
-
 def clean_and_conform(
     orders: DataFrame,
     consumers: DataFrame,
@@ -310,6 +297,9 @@ def clean_and_conform(
     cache_intermediates: bool = False,    
     verbose: bool = False,                
 ) -> DataFrame:
+    """
+    Limpa e conforma os DataFrames de entrada.
+    """
     o = conform_orders(orders, business_tz=business_tz)
     c = conform_consumers(consumers)
     r = conform_restaurants(restaurants)
@@ -360,10 +350,8 @@ def clean_and_conform(
                  "minimum_order_value", "merchant_city", "merchant_state", "merchant_country", "merchant_created_at")
     a = a.select("customer_id", "is_target")
 
-    # ===== Broadcast em dimensões pequenas =====
     r = F.broadcast(r)
 
-    # ===== Joins =====
     df = (o.join(c, on="customer_id", how="left")
             .join(r, on="merchant_id", how="left")
             .join(a, on="customer_id", how="left"))
@@ -381,8 +369,6 @@ def clean_and_conform(
         df = df.persist()
 
     return df
-
-# ---------- "Silvers" e agregações ----------
 
 def build_orders_silver(df: DataFrame) -> DataFrame:
     """
@@ -429,7 +415,6 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
         )
     )
 
-    # ===== MOV imputado por média em nível de price_range =====
     mov_range = (
         base.groupBy("price_range")
             .agg(F.avg("minimum_order_value").alias("mov_mean_range"))
@@ -444,7 +429,6 @@ def enrich_orders_for_analysis(df_orders_silver: DataFrame) -> DataFrame:
         .drop("mov_mean_range")
     )
 
-    # ===== delivery_time imputado por média em nível de price_range =====
     deliv_range = (
         base.groupBy("price_range")
             .agg(F.avg("delivery_time").alias("del_mean_range"))
@@ -522,3 +506,23 @@ def build_user_aggregates(
     agg = agg.withColumn("heavy_user", (F.col("frequency") >= F.lit(3)))
 
     return agg
+
+def get_exp_window(s):
+    """
+    Lê a janela do experimento a partir das configurações. Caso não exista, utiliza inferência automática.
+
+    Parâmetros:
+        s: Objeto de configurações carregado.
+
+    Retorna:
+        Tuple[str, str, bool]: Data de início, data de fim e flag de inferência automática.
+    """
+    win = getattr(s.analysis, "experiment_window", None)
+    if isinstance(win, dict):
+        start = win.get("start")
+        end   = win.get("end")
+    else:
+        start = None
+        end   = None
+    auto = bool(getattr(s.analysis, "auto_infer_window", True))
+    return start, end, auto

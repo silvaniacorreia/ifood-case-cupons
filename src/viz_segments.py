@@ -5,15 +5,23 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def ensure_dir(path: str) -> None:
+    """
+    Cria um diretório se ele não existir.
+    """
     os.makedirs(path, exist_ok=True)
 
 def to_pandas_spark(df_spark) -> pd.DataFrame:
-    # aceitamos Spark DataFrame pequeno ou pandas
+    """
+    Converte um DataFrame do Spark para um DataFrame do Pandas, se necessário.
+    """
     if hasattr(df_spark, "toPandas") and not isinstance(df_spark, pd.DataFrame):
         return df_spark.toPandas()
     return df_spark
 
 def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
+    """
+    Salva um DataFrame como um arquivo CSV.
+    """
     ensure_dir(outdir)
     p = os.path.join(outdir, f"{name}.csv")
     df.to_csv(p, index=False)
@@ -28,6 +36,9 @@ def plot_bars_by_segment(
     outdir: Optional[str] = None,
     fname: Optional[str] = None,
 ):
+    """
+    Plota barras para a comparação entre grupos de controle e tratamento.
+    """
     df = to_pandas_spark(df_or_spark)
     segs = sorted(df[segment_col].astype(str).unique().tolist())
     groups = sorted(df[group_col].astype(int).unique().tolist())  # [0, 1]
@@ -64,6 +75,9 @@ def plot_box_by_segment(
     outdir: Optional[str] = None,
     fname: Optional[str] = None,
 ):
+    """
+    Plota um boxplot para a comparação entre grupos de controle e tratamento.
+    """
     df = users_pdf.copy()
     df["segment"] = df[segment_col].astype(str)
     df["group"] = df["is_target"].astype(int)
@@ -101,6 +115,9 @@ def plot_hist_by_segment(
     outdir: Optional[str] = None,
     fname: Optional[str] = None,
 ):
+    """
+    Plota um histograma para a comparação entre grupos de controle e tratamento.
+    """
     seg_vals = sorted(users_pdf[segment_col].astype(str).unique().tolist())
     for seg in seg_vals:
         fig, ax = plt.subplots(figsize=(8, 4))

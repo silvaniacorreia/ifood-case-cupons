@@ -6,7 +6,6 @@ from scipy import stats
 from pyspark.sql import DataFrame, functions as F, types as T
 from typing import Iterable, Optional
 
-# ========== MÉTRICAS ==========
 def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
     """
     Resumo descritivo por grupo A/B (controle vs tratamento).
@@ -151,7 +150,6 @@ def compute_robust_metrics(
         })
     return pd.DataFrame(rows)
 
-# ========== TESTES ==========
 def welch_ttest(x_treat: pd.Series, x_ctrl: pd.Series) -> Dict[str, float]:
     """
     Executa Welch t-test para duas amostras independentes (médias).
@@ -224,7 +222,6 @@ def run_nonparam_tests(users_pdf: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     out["aov_user_mw"] = mannwhitney_u(t["aov_user"], c["aov_user"])
     return out
 
-# ========== VIABILIDADE ==========
 def financial_viability(
     users_silver: DataFrame,
     *,

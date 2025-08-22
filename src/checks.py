@@ -32,6 +32,16 @@ def validate_gzip(p: Path) -> bool:
         return False
 
 def preview_tar_members(p: Path, limit: int = 5) -> list[str]:
+    """
+    Retorna os nomes dos primeiros arquivos em um arquivo tar.gz.
+
+    Parâmetros:
+        p (Path): Caminho para o arquivo tar.gz.
+        limit (int): Número máximo de arquivos a serem retornados.
+
+    Retorna:
+        list[str]: Lista com os nomes dos arquivos.
+    """
     names = []
     with tarfile.open(p, "r:gz") as tar:
         for m in tar.getmembers():
@@ -42,6 +52,16 @@ def preview_tar_members(p: Path, limit: int = 5) -> list[str]:
     return names
 
 def list_valid_ab_csvs(ab_dir: Path, min_bytes: int = 1024) -> list[Path]:
+    """
+    Lista arquivos CSV válidos no diretório de A/B.
+
+    Parâmetros:
+        ab_dir (Path): Caminho para o diretório de A/B.
+        min_bytes (int): Tamanho mínimo em bytes para considerar um arquivo válido.
+
+    Retorna:
+        list[Path]: Lista de caminhos para arquivos CSV válidos.
+    """
     if not ab_dir.exists():
         return []
     out = []
@@ -96,7 +116,6 @@ def preflight(raw_dir: str | Path, strict: bool = True) -> Dict[str, Any]:
     raw = Path(raw_dir)
     report: Dict[str, Any] = {"raw_dir": str(raw), "files": {}, "ab_csv_candidates": []}
 
-    # 1) presença / tamanho / integridade gzip
     for key, fname in REQUIRED_FILES.items():
         p = raw / fname
         exists, size = _exists_and_size(p)
@@ -112,16 +131,13 @@ def preflight(raw_dir: str | Path, strict: bool = True) -> Dict[str, Any]:
                 item["tar_error"] = str(e)
         report["files"][key] = item
 
-    # 2) CSVs do A/B válidos
     ab_dir = raw / "ab_test_ref_extracted"
     valids = list_valid_ab_csvs(ab_dir)
     report["ab_csv_candidates"] = [str(p) for p in valids]
 
-    # 3) formato do orders
     orders_fmt = sniff_orders_format(raw / REQUIRED_FILES["orders"])
     report["orders_format_guess"] = orders_fmt
 
-    # 4) decisões de rigor
     criticals = []
     for k in ["orders", "consumers", "restaurants", "ab_tar"]:
         f = report["files"].get(k, {})
@@ -145,8 +161,7 @@ def profile_loaded(orders, consumers, restaurants, abmap, n: int = 5, light: boo
        light=True evita operações pesadas (count/agg/shuffle)."""
 
     def _nulls(df):
-        # versão leve: apenas esquema das colunas-chave
-        return None  # desabilitado no modo leve
+        return None  
 
     print("\n=== PROFILE: ORDERS ===")
     if not light:
@@ -194,3 +209,92 @@ def profile_loaded(orders, consumers, restaurants, abmap, n: int = 5, light: boo
     else:
         abmap.printSchema()
         abmap.limit(n).show(n, truncate=False)
+
+def check_post_etl(
+    orders_silver,
+    users_silver,
+    *,
+    light: bool = True,
+    key_cols: list[str] | None = None,
+    sample_frac: float = 0.001,
+    preview_rows: int = 5,
+    use_pandas_preview: bool = False,
+    check_semantic_dups: bool = True,
+):
+    """
+    Executa checagens leves pós-ETL para registro no Colab.
+    - light=True: nulos apenas em colunas-chave e previews por sample.
+    - light=False: nulos em todas as colunas (lento).
+    - check_semantic_dups: investiga duplicatas semânticas na fato (lento moderado).
+    """
+    if key_cols is None:
+        key_cols = [
+            "order_id", "customer_id", "merchant_id",
+            "event_ts_utc", "order_total_amount",
+            "is_target", "price_range", "language", "active",
+            "delivery_time_imputed", "minimum_order_value_imputed",
+        ]
+    key_cols = [c for c in key_cols if c in orders_silver.columns]
+
+    print("Faixa de datas (UTC) em orders_silver:")
+    orders_silver.agg(
+        F.min("event_ts_utc").alias("min_utc"),
+        F.max("event_ts_utc").alias("max_utc"),
+    ).show(truncate=False)
+
+    print("Split A/B (users):")
+    users_silver.groupBy("is_target").count().orderBy("is_target").show()
+
+    def nulls_by_col(df, cols):
+        exprs = [F.sum(F.col(c).isNull().cast("int")).alias(c) for c in cols]
+        return df.select(exprs)
+
+    if light:
+        print(f"Nulos (colunas-chave): {key_cols}")
+        nulls_by_col(orders_silver, key_cols).show(truncate=False)
+    else:
+        print("Nulos (todas as colunas) — operação pesada:")
+        nulls_by_col(orders_silver, orders_silver.columns).show(truncate=False)
+
+    if check_semantic_dups:
+        print("\nPossíveis duplicatas sistêmicas (mesmo cliente/restaurante/ts/valor, order_id distinto):")
+        dups = (
+            orders_silver
+            .groupBy("customer_id", "merchant_id", "event_ts_utc", "order_total_amount")
+            .agg(
+                F.countDistinct("order_id").alias("n_orders"),
+                F.collect_set("order_id").alias("order_ids"),
+            )
+            .filter(F.col("n_orders") > 1)
+        )
+        total_dups = dups.count()
+        print(f"Total de combinações com múltiplos order_id: {total_dups}")
+        if total_dups > 0:
+            dups.select("customer_id","merchant_id","event_ts_utc","order_total_amount","n_orders","order_ids")\
+                .orderBy(F.col("n_orders").desc())\
+                .show(10, truncate=False)
+
+    print("\nPreview orders_silver (sample leve):")
+    orders_preview_cols = [c for c in [
+        "price_range","order_id","customer_id","merchant_id",
+        "event_ts_utc","order_total_amount","origin_platform",
+        "is_target","language","active"
+    ] if c in orders_silver.columns]
+    preview_df = orders_silver.sample(False, sample_frac, seed=42).select(*orders_preview_cols)
+    if preview_df.rdd.isEmpty():
+        preview_df = orders_silver.select(*orders_preview_cols).limit(preview_rows)
+    preview_df.show(preview_rows, truncate=False)
+
+    print("\nPreview users_silver (primeiras linhas):")
+    users_preview_cols = [c for c in [
+        "customer_id","last_order","frequency","monetary","is_target","recency"
+    ] if c in users_silver.columns]
+    users_silver.select(*users_preview_cols).show(preview_rows, truncate=False)
+
+    if use_pandas_preview:
+        try:
+            from IPython.display import display
+            display(orders_silver.limit(preview_rows).toPandas())
+            display(users_silver.limit(preview_rows).toPandas())
+        except Exception:
+            pass
