@@ -1,5 +1,11 @@
 # Case iFood: Teste A/B de Cupons
 
+## Resumo da Análise
+
+O teste A/B de cupons no iFood mostrou aumento significativo de **frequência de pedidos (+100%)** e **gasto total por usuário (+20%)**, mas sem impacto no ticket médio. O retorno financeiro foi **positivo no agregado (ROI 31%)**, embora segmentos como **heavy e não-heavy isolados tenham destruído valor**, enquanto **Desktop e iOS sustentaram ROI elevado** e **Android operou no limite**. Conclui-se que os cupons são eficazes como alavanca de engajamento, mas demandam **segmentação mais inteligente, calibragem de valor/gatilhos e governança de testes** para garantir retorno sustentável, com potencial de gerar até **R\$4,8 milhões de margem incremental anual** sob os ajustes propostos.
+
+---
+
 ## 1. Contexto
 O iFood testou uma campanha de cupons com um grupo de usuários selecionados (grupo teste), enquanto outro grupo similar não recebeu o benefício (grupo controle).  
 O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o gasto dos usuários, além de verificar a viabilidade financeira da iniciativa.
