@@ -12,6 +12,15 @@ except Exception:
 def break_even_needed(take_rate: float, coupon_cost: float, redemption_rate: float) -> float:
     """
     Valor mínimo de vendas extras por usuário tratado necessário para pagar o cupom.
+
+    Parâmetros:
+        take_rate (float): Fração da receita capturada pela plataforma (ex.: 0.23).
+        coupon_cost (float): Custo unitário do cupom (ex.: 10.0).
+        redemption_rate (float): Taxa de resgate do cupom (ex.: 0.30).
+
+    Retorna:
+        float: Valor mínimo de GMV incremental por usuário tratado que garante break-even.
+
     Fórmula: (custo_do_cupom * taxa_de_resgate) / take_rate
     Ex.: 10 * 0.30 / 0.23 ≈ 13.04
     """
@@ -33,18 +42,22 @@ def break_even_table_spark(
 ) -> pd.DataFrame:
     """
     Calcula, no Spark, o uplift de GMV por usuário tratado e compara com o break-even.
-    Se segment_col=None, retorna 1 linha (overall). Caso contrário, 1 linha por segmento.
 
-    Parâmetros esperados no `users_silver` (Spark DataFrame):
-      - `id_col` (default: customer_id)
-      - `group_col` (0 = controle, 1 = tratamento)
-      - `monetary_col` (valor total por usuário no período)
-      - opcionalmente `segment_col` (ex.: heavy_user, origin_platform)
+    Parâmetros:
+        users_silver: DataFrame Spark com colunas de usuário agregadas (id_col, group_col, monetary_col) ou nível usuário.
+        take_rate (float): Fração da receita capturada pela plataforma.
+        coupon_cost (float): Custo unitário do cupom.
+        redemption_rate (float): Taxa de resgate do cupom.
+        segment_col (Optional[str]): Coluna de segmento; se None, calcula overall.
+        id_col (str): Nome da coluna de identificador do usuário (padrão: 'customer_id').
+        group_col (str): Nome da coluna de grupo A/B (padrão: 'is_target').
+        monetary_col (str): Nome da coluna de valor monetário por usuário (padrão: 'monetary').
 
-    Retorna um pandas.DataFrame com as colunas:
-      segment, usuarios_trat, gmv_ctrl, gmv_trat, uplift_gmv_user, uplift_needed,
-      gap_uplift, receita_total, custo_total, lucro_total, lucro_por_usuario,
-      roi_percent, status
+    Retorna:
+        pd.DataFrame: Tabela pandas com colunas:
+            segment, usuarios_trat, gmv_ctrl, gmv_trat, uplift_gmv_user, uplift_needed,
+            gap_uplift, receita_total, custo_total, lucro_total, lucro_por_usuario,
+            roi_percent, status
     """
     if F is None:
         raise RuntimeError("pyspark não está disponível para executar break_even_table_spark.")

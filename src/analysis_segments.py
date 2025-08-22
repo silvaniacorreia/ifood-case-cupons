@@ -12,10 +12,13 @@ def build_rfm_buckets(
 ) -> DataFrame:
     """
     Cria scores R, F, M via quantis e um rótulo RFM.
-    Regra comum:
-      - Recência: menor é melhor (score invertido)
-      - Frequência/Monetary: maior é melhor
-    Retorna um DataFrame Spark com colunas r_score, f_score, m_score, rfm_segment.
+
+    Parâmetros:
+        users_silver (DataFrame): DataFrame Spark com colunas 'recency','frequency','monetary'.
+        qcuts (Tuple[float, ...]): Quantis usados para cortar as distribuições.
+
+    Retorna:
+        DataFrame: DataFrame Spark contendo colunas r_score, f_score, m_score e rfm_segment.
     """
     qs = list(qcuts)
     r_q = users_silver.approxQuantile("recency", qs, 1e-3)
@@ -55,9 +58,15 @@ def ab_metrics_by_segment(
     top_k_segments: Optional[int] = None
 ) -> DataFrame:
     """
-    Calcula métricas A/B por segmento (Spark):
-      usuarios, pedidos_user, gmv_user, conversao, aov
-    Retorna um DF com linhas por (segmento, is_target).
+    Calcula métricas A/B por segmento (Spark).
+
+    Parâmetros:
+        users_with_segments (DataFrame): DataFrame Spark contendo colunas de segmento e métricas.
+        segment_col (str): Nome da coluna de segmento.
+        top_k_segments (Optional[int]): Se fornecido, limita aos top K segmentos por número de usuários.
+
+    Retorna:
+        DataFrame: DataFrame Spark com uma linha por (segmento, is_target) contendo as métricas agregadas.
     """
     aov_user = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
     df = (

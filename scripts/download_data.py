@@ -10,9 +10,19 @@ import gzip
 
 def shard_ndjson_gz(src_gz: Path, out_dir: Path, target_mb: int = 100) -> None:
     """
-    Converte um único NDJSON .gz em vários .json 'part-xxxxx.json' (~target_mb cada).
-    - Idempotente: se as partes já existirem, não refaz.
-    - Não altera o conteúdo (só divide por linhas).
+    Converte um único NDJSON .gz em vários arquivos JSON ('part-xxxxx.json') com tamanho aproximado.
+
+    Parâmetros:
+        src_gz (Path): Caminho para o arquivo NDJSON comprimido (.gz).
+        out_dir (Path): Diretório de saída onde as partes serão escritas.
+        target_mb (int): Tamanho alvo em megabytes por parte (aproximado).
+
+    Retorna:
+        None
+
+    Observações:
+        - Idempotente: se partes já existirem no `out_dir`, não refaz.
+        - Não altera o conteúdo; apenas divide por linhas.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     if any(out_dir.glob("part-*.json")):
@@ -39,6 +49,12 @@ def shard_ndjson_gz(src_gz: Path, out_dir: Path, target_mb: int = 100) -> None:
 def load_settings(path: str = "config/settings.yaml") -> dict:
     """
     Carrega as configurações do arquivo YAML.
+
+    Parâmetros:
+        path (str): Caminho para o arquivo de configurações YAML.
+
+    Retorna:
+        dict: Conteúdo do YAML convertido para dicionário Python.
     """
     if not os.path.exists(path):
         path = "config/settings.example.yaml"
@@ -47,7 +63,15 @@ def load_settings(path: str = "config/settings.yaml") -> dict:
 
 def stream_download(url: str, dest: Path, chunk_size: int = 1024 * 1024) -> None:
     """
-    Faz o download de um arquivo de forma eficiente.
+    Faz o download de um arquivo de forma eficiente, salvando em `dest`.
+
+    Parâmetros:
+        url (str): URL a ser baixada.
+        dest (Path): Caminho do arquivo de destino.
+        chunk_size (int): Tamanho dos blocos lidos por iteração.
+
+    Retorna:
+        None
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     with requests.get(url, stream=True, timeout=60) as r:
@@ -63,6 +87,13 @@ def stream_download(url: str, dest: Path, chunk_size: int = 1024 * 1024) -> None
 def extract_tar_gz(tar_path: Path, out_dir: Path) -> Path:
     """
     Extrai um arquivo TAR.GZ para um diretório de saída.
+
+    Parâmetros:
+        tar_path (Path): Caminho para o arquivo tar.gz.
+        out_dir (Path): Diretório de saída para os arquivos extraídos.
+
+    Retorna:
+        Path: Diretório de saída onde os arquivos foram extraídos.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     with tarfile.open(tar_path, "r:gz") as tar:

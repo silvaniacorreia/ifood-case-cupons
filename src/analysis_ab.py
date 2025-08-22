@@ -9,15 +9,15 @@ from typing import Iterable, Optional
 def compute_ab_summary(users_silver: DataFrame) -> DataFrame:
     """
     Resumo descritivo por grupo A/B (controle vs tratamento).
-    Métricas:
-      - usuarios: contagem de usuários
-      - pedidos_user: média de pedidos por usuário
-      - gmv_user: média de GMV por usuário
-      - conversao: % usuários com >=1 pedido
-      - aov: média do ticket por usuário (apenas frequência > 0)
-    Retorna um DataFrame Spark com uma linha por grupo (is_target ∈ {0,1}).
+
+    Parâmetros:
+        users_silver (DataFrame): DataFrame Spark com colunas 'customer_id','is_target','frequency','monetary'.
+
+    Retorna:
+        DataFrame: DataFrame Spark com uma linha por grupo (is_target) contendo as métricas resumo.
     """
     aov_user = F.when(F.col("frequency") > 0, F.col("monetary") / F.col("frequency"))
+
     return (
         users_silver
         .groupBy("is_target")
@@ -40,8 +40,17 @@ def collect_user_level_for_tests(
     stratify: bool = True,
 ) -> pd.DataFrame:
     """
-    Coleta colunas para testes em pandas. Se `sample_frac` ∈ (0,1),
-    amostra no Spark antes do toPandas (opcionalmente estratificado por is_target).
+    Coleta colunas do nível de usuário e retorna um DataFrame pandas pronto para testes.
+
+    Parâmetros:
+        users_silver (DataFrame): DataFrame Spark com colunas de usuário.
+        required_cols (Optional[Iterable[str]]): Colunas adicionais a incluir.
+        sample_frac (Optional[float]): Fração a ser amostrada no Spark antes do toPandas (se entre 0 e 1).
+        seed (int): Semente para amostragem.
+        stratify (bool): Se True, faz amostragem estratificada por 'is_target' quando possível.
+
+    Retorna:
+        pd.DataFrame: DataFrame pandas contendo colunas selecionadas e colunas derivadas (aov_user, conv_flag).
     """
     base_cols = ["customer_id","is_target","frequency","monetary"]
     extended_cols = ["heavy_user","is_new_customer","origin_platform"]

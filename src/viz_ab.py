@@ -6,11 +6,33 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def _ensure_dir(p: str) -> None:
+    """
+    Garante que o diretório exista, criando-o quando necessário.
+
+    Parâmetros:
+        p (str): Caminho do diretório a ser criado.
+
+    Retorna:
+        None
+    """
     os.makedirs(p, exist_ok=True)
 
 def _fmt_axes(ax, y_label: str, title: Optional[str] = None, y_log: bool = False):
+    """
+    Aplica formatação padrão a eixos de um gráfico matplotlib.
+
+    Parâmetros:
+        ax: objeto Axes do matplotlib a ser formatado.
+        y_label (str): rótulo do eixo Y.
+        title (Optional[str]): título do gráfico. Se None, não altera o título.
+        y_log (bool): se True, configura escala logarítmica no eixo Y.
+
+    Retorna:
+        None
+    """
     ax.set_ylabel(y_label)
-    if title: ax.set_title(title)
+    if title:
+        ax.set_title(title)
     if y_log:
         ax.set_yscale("log")
         ax.yaxis.set_major_locator(plt.MaxNLocator(8))
@@ -19,6 +41,14 @@ def _fmt_axes(ax, y_label: str, title: Optional[str] = None, y_log: bool = False
 def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
     """
     Salva um DataFrame como um arquivo CSV.
+
+    Parâmetros:
+        df (pd.DataFrame): DataFrame a ser salvo.
+        outdir (str): diretório de saída.
+        name (str): nome do arquivo (sem extensão).
+
+    Retorna:
+        str: caminho completo do arquivo CSV salvo.
     """
     _ensure_dir(outdir)
     outp = os.path.join(outdir, f"{name}.csv")
@@ -28,6 +58,12 @@ def save_table_csv(df: pd.DataFrame, outdir: str, name: str) -> str:
 def to_pandas_safe(df):
     """
     Converte um DataFrame do Spark para um DataFrame do Pandas, se necessário.
+
+    Parâmetros:
+        df: DataFrame Spark ou pandas.
+
+    Retorna:
+        pandas.DataFrame: resultado convertido (ou o objeto original se já for pandas).
     """
     try:
         if hasattr(df, "toPandas") and not isinstance(df, pd.DataFrame):
@@ -48,6 +84,18 @@ def plot_ab_box(
 ):
     """
     Plota um boxplot para a comparação entre grupos de controle e tratamento.
+
+    Parâmetros:
+        users_pdf_or_spark: DataFrame (pandas ou Spark) contendo colunas 'is_target' e a métrica.
+        metric_col (str): nome da coluna métrica a ser plotada.
+        outdir (str): diretório onde salvar a figura.
+        fname (Optional[str]): nome do arquivo (sem extensão). Se None, usa 'box_<metric_col>'.
+        clip_p (Optional[float]): quantil para recorte de cauda (ex.: 0.01). Se None, não recorta.
+        y_log (bool): se True, usa escala log no eixo y.
+        title (Optional[str]): título do gráfico; se None, será gerado automaticamente.
+
+    Retorna:
+        str: caminho do arquivo PNG salvo.
     """
     # mapeamento amigável de nomes de métricas para eixo/título
     label_map = {
@@ -90,7 +138,19 @@ def plot_ab_hist_overlay(
     title: Optional[str] = None,
 ):
     """
-    Plota um histograma sobreposto para a comparação entre grupos de controle e tratamento.
+    Plota um histograma sobreposto para comparação entre grupos de controle e tratamento.
+
+    Parâmetros:
+        users_pdf (pd.DataFrame): DataFrame pandas com colunas 'is_target' e a métrica.
+        metric_col (str): nome da coluna métrica a ser plotada.
+        bins (int): número de bins do histograma.
+        clip_p (Optional[float]): quantil para recorte de cauda.
+        outdir (str): diretório de saída para salvar a figura.
+        fname (Optional[str]): nome do arquivo (sem extensão). Se None, usa 'hist_<metric_col>'.
+        title (Optional[str]): título do gráfico.
+
+    Retorna:
+        str: caminho do arquivo PNG salvo.
     """
     # mapeamento amigável de nomes de métricas para eixo/título
     label_map = {
@@ -136,7 +196,18 @@ def plot_group_bars(
     title: Optional[str] = None
 ):
     """
-    Plota barras para a comparação entre grupos de controle e tratamento.
+    Plota barras comparativas entre grupos (ex.: controle vs tratamento) a partir de um resumo.
+
+    Parâmetros:
+        df_summary (pd.DataFrame): tabela resumo que contém a coluna 'is_target' e as métricas a plotar.
+        metrics (Iterable[str]): lista de nomes de colunas métricas em `df_summary` a serem plotadas.
+        labels_map (Optional[dict]): mapeamento opcional de nomes de coluna -> rótulos para legenda.
+        outdir (str): diretório de saída para a figura.
+        fname (str): nome do arquivo (sem extensão).
+        title (Optional[str]): título do gráfico.
+
+    Retorna:
+        str: caminho do arquivo PNG salvo.
     """
     d = df_summary.copy()
     d["Grupo"] = d["is_target"].map({0:"Controle",1:"Tratamento"}).astype(str)

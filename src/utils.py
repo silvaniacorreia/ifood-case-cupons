@@ -64,7 +64,13 @@ def load_settings(path: str = "config/settings.yaml") -> Settings:
 
 def set_seeds(seed: int = 42):
     """
-    Define a semente para a geração de números aleatórios.
+    Define a semente para a geração de números aleatórios em módulos comuns.
+
+    Parâmetros:
+        seed (int): Valor da semente a ser usada em random e numpy.
+
+    Retorna:
+        None
     """
     random.seed(seed)
     np.random.seed(seed)

@@ -9,10 +9,11 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 **Glossário**
 - **Mediana:** valor típico por cliente (menos sensível a casos extremos).
 - **p95:** nível alto esperado (apenas ~5% dos clientes ficam acima disso).
-- **Heavy users (≥3):** parcela de clientes frequentes.
+- **Heavy users (≥3):** parcela de clientes frequentes, com pelo menos 3 pedidos no período.
 - **Tratamento:** grupo que recebeu o cupom.
 - **Controle:** grupo que não recebeu o cupom.
 - **AOV:** ticket médio por pedido.
+- **GMV:** valor total gasto pelos usuários.
 ---
 
 ## 2. Principais Resultados da Campanha
@@ -27,7 +28,7 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 | Com Cupom | 442676 | **79.8★** | **2★** | 41.00 | 507.19 | 10 | 99.80 | 36.93% |
 
 > **Notas:** 
-> **★** = diferença estatisticamente significativa vs. Controle (teste **Mann–Whitney**, p < 0,05). 
+> **★** = diferença estatisticamente significativa versos Controle (teste **Mann–Whitney**, p < 0,05). 
 
 - **Pedidos por usuário**: aumento de **+100%** no grupo que recebeu o cupom.
 - **GMV por usuário (valor gasto no app)**: crescimento de **+20%** com o cupom.
@@ -40,7 +41,7 @@ O objetivo do experimento foi avaliar se o cupom aumentaria o engajamento e o ga
 **Figura 2 – Distribuição de pedidos por usuário (controle vs tratamento).**  
 ![Distribuição de pedidos](assets/ab/hist_frequency.png)
 
-**Figura 3 – Boxplots (robustos a outliers) por grupo.**  
+**Figura 3 – Boxplots (medianas) por grupo.**  
 a) GMV por usuário  
 ![Box GMV](assets/ab/box_monetary.png)  
 
@@ -63,16 +64,7 @@ Premissas adotadas:
     - Taxa de uso do cupom: **30%**.  
     - Comissão média do iFood (take rate): **23%** sobre o valor dos pedidos.  
 
-- **Receita incremental total (comissões adicionais):** R$1,74 milhão.  
-- **Custo total dos cupons concedidos:** R$1,33 milhão.  
-- **Lucro incremental total (receita − custo):** R$416 mil.  
-- **Lucro incremental por usuário tratado:** R$0,94.  
-- **LTV (valor estimado de longo prazo por cliente):** R$34,6.  
-- **CAC (custo de aquisição via cupom):** R$10.  
-- **Relação LTV/CAC:** 3,5 → saudável.  
-- **ROI (%) ≈ 31,35%**
-
-**Tabela 2 – Indicadores financeiros (base).**
+**Tabela 2 – Indicadores financeiros.**
 
 | Métrica                         | Valor          |
 |---                              |---             |
@@ -86,12 +78,12 @@ Premissas adotadas:
 | **ROI (%)**                     | **31,35%**     |
 
 > **Break-even (geral do A/B)**
-> Precisa: **R\$ 13,04** | Entregou: **R\$ 17,13** | Gap: **+R\$ 4,09**  
+> Necessário: **R\$ 13,04** | Entregou: **R\$ 17,13** | Gap: **+R\$ 4,09**  
 > **Lucro por usuário:** **R\$ 0,94** | **Status:** **OK**
 
 **Nota sobre o LTV:**  
-O cálculo do LTV (Lifetime Value) é normalmente utilizado em horizontes mais longos, acompanhando a evolução do cliente ao longo de vários meses ou anos. No nosso caso, os dados disponíveis cobrem apenas o período do experimento, de modo que o LTV foi aqui estimado a partir desse intervalo restrito.  
-Mesmo assim, a métrica foi incluída porque oferece uma boa referência de potencial de retorno por cliente e permite compará-lo com o CAC. Ou seja, ainda que a estimativa seja mais conservadora e não capture todo o ciclo de vida real do cliente, ela ajuda a reforçar a análise de viabilidade financeira no contexto deste case.
+O cálculo do LTV (Lifetime Value) é normalmente utilizado em horizontes mais longos, acompanhando a evolução do cliente ao longo de vários meses ou anos. Na análise, os dados disponíveis cobrem apenas o período do experimento, de modo que o LTV foi aqui estimado a partir desse intervalo restrito.  
+Ainda assim, a métrica foi incluída porque oferece uma boa referência de potencial de retorno por cliente e permite compará-lo com o CAC. Ou seja, ainda que a estimativa seja mais conservadora e não capture todo o ciclo de vida real do cliente, ela ajuda a reforçar a análise de viabilidade financeira no contexto deste case.
 
 **Interpretação:**  
 O investimento em cupons trouxe **retorno positivo** para o iFood.  
@@ -109,16 +101,16 @@ Cada real gasto com cupons gerou aproximadamente **R\$3,50 de valor de cliente a
 
 ### 2.4. Recomendações e Nova Proposta de Teste A/B
 
-Os resultados da análise mostraram que os cupons, da forma como foram aplicados, aumentaram o número de pedidos e o GMV, mas não alteraram o valor médio por pedido (AOV). Além disso, observamos que até usuários com alto engajamento (heavy users) utilizaram os cupons, o que reduz a eficiência da campanha.
+Os resultados da análise mostraram que os cupons, da forma como foram aplicados, aumentaram o número de pedidos e o GMV, mas não alteraram o valor médio por pedido (AOV). Além disso, foi observado que usuários com alto engajamento (heavy users) utilizaram os cupons, o que reduz a eficiência da campanha.
 
-Diante disso, recomendamos **ajustes na estratégia** antes de repetir a ação:
+Diante disso, recomendam-se **ajustes na estratégia** antes de repetir a ação:
 
 #### 1. Segmentação mais inteligente
 - **Evitar heavy users**: clientes que já compram frequentemente tendem a usar o cupom, mas não aumentam seu gasto médio. Assim, o investimento não gera valor incremental.
 - **Foco em clientes inativos ou de baixa frequência**: direcionar cupons a esse grupo pode aumentar a base ativa e gerar maior retorno sobre o investimento.
 
 #### 2. Diferenciar o tipo de cupom
-- **Cupom com gasto mínimo**: exemplo, "R\$10 de desconto para compras acima de R\$40”. Esse modelo incentiva aumento do ticket médio, combatendo o resultado neutro que vimos no AOV.
+- **Cupom com gasto mínimo**: exemplo, "R\$10 de desconto para compras acima de R\$40”. Esse modelo incentiva aumento do ticket médio, combatendo o resultado neutro visto no AOV.
 - **Frete grátis**: alternativa que pode ser mais atrativa em alguns perfis de consumidores e incentivar novas compras.
 
 #### 3. Nova proposta de teste A/B
@@ -148,13 +140,14 @@ Com essa abordagem, será possível avaliar se os cupons funcionam não apenas c
 
 **Critérios utilizados:**
 - **Frequência (Heavy user):**  
-  - *Definição*: **heavy** (≥ 3 pedidos no período) vs **não-heavy** (< 3).  
-  - *Racional*: frequência é um preditor direto de valor; separar quem já tem hábito de compra de quem ainda está “em formação”.
+  A **análise de frequência de pedidos** divide os clientes em dois grupos: **não-heavy** (menos de 3 pedidos no período) e **heavy** (3 ou mais pedidos). A ideia é verificar se o cupom tem efeito diferente em clientes ocasionais, que ainda estão em fase de adoção do hábito, em comparação com clientes já engajados, que compram frequentemente. Esse corte simples ajuda a avaliar se os cupons estão incentivando progressão de frequência ou apenas sendo utilizados por usuários que já comprariam de qualquer forma.
 - **Plataforma de origem:** **Android**, **iOS** e **Desktop**.  
-  - *Racional*: o comportamento por dispositivo/canal difere (tamanho do ticket, fricção de checkout, jornada).
-- **RFM (Recency–Frequency–Monetary):** códigos **111–555** (1=baixo, 5=alto em cada eixo).  
-  - *Racional*: permite distinguir desde “recente-pouco-baixo ticket” (ex.: 111) até “recente-muito-alto ticket” (ex.: 555) para graduar o incentivo.
-- **Novo vs recorrente:** sinalizamos **novo** quando disponível, porém, na base utilizada, o volume de “novo” é residual (amostra focada em quem já comprou). Mantemos como **exploratório** até incorporar usuários que ainda não pediram (para medir 1ª compra de fato).
+  A análise por **plataforma de uso** considera que o comportamento do cliente pode variar dependendo do canal de compra (app Android, app iOS ou versão Desktop). Fatores como usabilidade, jornada de checkout e perfil socioeconômico influenciam tanto o ticket médio quanto a sensibilidade ao desconto. Avaliar o resultado por plataforma permite entender onde o cupom gera mais retorno financeiro e onde pode estar operando no limite da viabilidade.
+- **RFM (Recency–Frequency–Monetary):**  
+  A análise de **RFM (Recency, Frequency, Monetary)** é uma técnica clássica de segmentação de clientes, que classifica os usuários de acordo com três dimensões: **recência da última compra (R)**, **frequência de pedidos (F)** e **valor gasto (M)**. Cada dimensão é escalonada de 1 (baixo) a 5 (alto), gerando até 125 combinações possíveis (ex.: 111 = clientes pouco recentes, baixa frequência e baixo gasto; 555 = clientes muito recentes, com alta frequência e alto gasto). Essa granularidade permite identificar quais perfis respondem melhor ao cupom e quais tendem a gerar canibalização. No entanto, como muitas células têm poucos usuários, a análise aqui destaca apenas as cinco células mais populosas do grupo tratado, oferecendo uma visão mais estável e representativa do comportamento observado.
+
+- **Novo vs recorrente:** 
+A análise de **novos vs recorrentes** busca entender se os cupons funcionam de forma diferente para quem nunca comprou no iFood (novos) e para quem já tem histórico de pedidos (recorrentes). Essa distinção é importante porque o cupom pode atuar tanto como ferramenta de **aquisição** (atrair o cliente para a 1ª compra) quanto de retenção (estimular clientes existentes a comprar mais vezes). No entanto, na base deste experimento, não havia clientes totalmente novos, já que os dados contemplavam apenas usuários com pelo menos um pedido anterior. Por isso, essa segmentação aparece aqui apenas como **exploratória**, a ser aprofundada em futuros testes que incluam de fato usuários sem histórico.
 
 ---
 
@@ -162,22 +155,21 @@ Com essa abordagem, será possível avaliar se os cupons funcionam não apenas c
 
 **1) Frequência (Heavy vs Não-heavy)**  
 
-
 **Tabela 3 – Medianas por segmento (Heavy vs Não-heavy) + métricas financeiras**
 
 | Segmento   | Usuários (Trat., amostra) | Usuários (Trat., base) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos | AOV mediano (Ctrl → Trat) | Δ AOV | Receita inc. total (R$) | Custo total (R$) | Lucro inc. total (R$) | Lucro por usuário (R$) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Não-heavy  | 34.929 | 279.181 | 47,00 → 50,00 | **+3,00**★ | 1 → 1 | 0 | 40,09 → 40,45 | **+0,37** | 200.754 | 837.543 | **-636.789** | **-2,28** |
-| Heavy      | 20.439 | 163.495 | 205,60 → 208,20 | **+2,60** | 5 → 5 | 0 | 42,30 → 42,30 | **+0,00** | 33.120 | 490.485 | **-457.365** | **-2,80** |
+| Não-heavy  | 34.929 | 279.181 | 47,00 → 50,00 | **+3,00**★ | 1 → 1 | 0 | 40,09 → 40,45 | +0,37 | 200.754 | 837.543 | -636.789 | -2,28 |
+| Heavy      | 20.439 | 163.495 | 205,60 → 208,20 | +2,60 | 5 → 5 | 0 | 42,30 → 42,30 | +0,00 | 33.120 | 490.485 | -457.365 | -2,80 |
 
 > **Notas:** 
-> • Valores marcados com **★** indicam **diferença estatisticamente significativa** entre Tratamento e Controle dentro do segmento (teste **Mann–Whitney**, p < 0,05). Em Não-heavy, embora a **mediana de pedidos** permaneça 1→1, o teste indica diferença na **distribuição** de pedidos. 
-> • As **medianas** (GMV/pedidos/AOV) foram calculadas sobre **amostra**; os “Usuários (Trat., amostra)” refletem o tamanho coletado.  
-> • As **métricas financeiras** (receita, custo, lucro, lucro por usuário) foram calculadas **sobre 100% da base** por segmento; por isso mostramos também “Usuários (Trat., base)”.
+> • **★** indica **diferença estatisticamente significativa** entre Tratamento e Controle dentro do segmento (teste **Mann–Whitney**, p < 0,05). Em Não-heavy, embora a **mediana de pedidos** permaneça 1→1, o teste indica diferença na **distribuição** de pedidos. 
+> • As **medianas** (GMV/pedidos/AOV) foram calculadas sobre **amostras** retiradas da base completa; os “Usuários (Trat., amostra)” refletem o tamanho coletado.  
+> • As **métricas financeiras** (receita, custo, lucro, lucro por usuário) foram calculadas **sobre 100% da base** por segmento.
 
 > **Break-even (Frequência)**  
-> **Não-heavy:** Precisa **R\$ 13,04** | Entregou **R\$ 3,13** | Gap **−R\$ 9,91** | **Lucro/usuário −R\$ 2,28** → **NEG**  
-> **Heavy:** Precisa **R\$ 13,04** | Entregou **R\$ 0,88** | Gap **−R\$ 12,16** | **Lucro/usuário −R\$ 2,80** → **NEG**
+> **Não-heavy:** Necessário **R\$ 13,04** | Entregou **R\$ 3,13** | Gap **−R\$ 9,91** | **Lucro/usuário −R\$ 2,28** → **NEG**  
+> **Heavy:** Necessário **R\$ 13,04** | Entregou **R\$ 0,88** | Gap **−R\$ 12,16** | **Lucro/usuário −R\$ 2,80** → **NEG**
 
 **Figura 4 - Mediana GMV/AOV/Pedidos por usuário (Heavy vs Não-heavy)**
 
@@ -188,27 +180,28 @@ b) AOV por usuário
 c) Pedidos por usuário
 ![Bars Pedidos](assets/segments/bars_heavy_medianas_pedidos_user.png)
 
+**Interpretação:**
 O cupom **não altera de forma relevante o comportamento típico** (medianas) dentro de cada grupo:
 - **Não-heavy**: GMV/usuário mediano sobe **+R\$3,00** (47,0 → 50,0), com **pedidos medianos estáveis** (1 → 1) e **AOV praticamente estável** (+R\$0,37).
-- **Heavy (≥3)**: **efeito marginal** em GMV mediano (**+R\$2,60**; 205,6 → 208,2); **pedidos medianos estáveis** (5 → 5) e **AOV estável**.
+- **Heavy (≥3)**: aumento em GMV mediano (**+R\$2,60**; 205,6 → 208,2), mas sem significância estatística; **pedidos medianos estáveis** (5 → 5) e **AOV estável**.
 
-* **Composição importa** 
+**Composição importa**
 O grupo Tratamento tem **mais heavy** (**~37%** vs **~31%** no Controle, +6 p.p.). Essa diferença de mix **eleva as médias globais** do tratado mesmo quando as **medianas por grupo mudam pouco**. 
 
-* **Implicações financeiras** 
+**Implicações financeiras**
 Com as premissas atuais (23% de take rate, cupom R\$10, resgate 30%), o **lucro incremental por usuário** é **negativo** em ambos:
 - **Não-heavy:** **−R\$2,28/usuário** (total −R\$636,8 mil).  
 - **Heavy:** **−R\$2,80/usuário** (total −R\$457,4 mil).  
-→ Sinal de **canibalização**/ineficiência com o **valor** e/ou **gatilho** atuais quando olhamos só por frequência.
 
-
-- O cupom **não move a mediana de pedidos** (1 → 1 em não-heavy; 5 → 5 em heavy); o ganho que existe acontece **fora do centro** (cauda), insuficiente para pagar o custo em cada grupo isolado.
-- Como a **composição** do Tratamento tem mais heavy, o agregado pode parecer melhor, mas a **política por frequência pura** (heavy vs não-heavy) **não se paga** com o desenho atual.
+Isto pode indicar **canibalização**/ineficiência com o **valor** e/ou **gatilho** atuais quando apenas a frequência é considerada.
+O cupom **não move a mediana de pedidos** (1 → 1 em não-heavy; 5 → 5 em heavy). O pequeno ganho observado vem de **poucos clientes específicos com gasto acima da média**, o que é **insuficiente** para compensar o custo quando olhamos o grupo como um todo.
+Como a **composição** do Tratamento possui mais heavy users, o agregado pode parecer melhor, mas a **política por frequência pura** (heavy vs não-heavy) **não se paga** com o desenho atual.
 
 **Ações sugeridas:**
-1. **Não-heavy (1–2 pedidos):** manter cupom **direcionado**, mas com **gatilho de progressão** (ex.: após o 1º pedido, ou após X dias sem compra) para empurrar ao **3º pedido**.  
-2. **Heavy (≥3):** **reduzir valor/frequência** do cupom (ou condicionar a novos comportamentos, p.ex., categorias menos frequentes), **evitando canibalização**.
-3. **Rebalancear a composição** em próximos testes: usar **randomização estratificada por heavy** ou **reponderar** o resultado global para o mix do Controle, deixando o efeito mais comparável.
+
+1. **Não-heavy (1–2 pedidos):** manter cupom **direcionado**, mas com **gatilho de progressão** (ex.: após o 1º pedido, ou após X dias sem compra) para conduzir usuário ao **3º pedido**.
+2. **Heavy (≥3):** **reduzir valor/frequência** do cupom (ou condicionar a novos comportamentos, por exemplo, categorias menos frequentes), **evitando canibalização**.
+3. **Equilibrar os grupos de teste:** assegurar que **controle e tratamento tenham proporções semelhantes de heavy e não-heavy**. Isso evita distorções no resultado global e permite avaliar com clareza o impacto real dos cupons.
 
 **KPIs a acompanhar:**
 - **% de heavy users (≥3)** no período (progressão de frequência).  
@@ -222,20 +215,20 @@ Com as premissas atuais (23% de take rate, cupom R\$10, resgate 30%), o **lucro 
 
 | Plataforma | Usuários (Trat., amostra) | Usuários (Trat., base) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos | AOV mediano (Ctrl → Trat) | Δ AOV | Receita inc. total (R$) | Custo total (R$) | Lucro inc. total (R$) | Lucro por usuário (R$) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Android | 23.632 | 189.796 | 59,00 → 69,80 | **+10,80**★ | 1 → 2 | **+1**★ | 38,57 → 38,67 | **+0,10** | 609.238 | 569.388 | **39.850** | **0,21** |
-| Desktop | 7.939  | 63.370  | 63,20 → 73,60 | **+10,40**★ | 1 → 2 | **+1**★ | 39,33 → 39,43 | **+0,10** | 305.302 | 190.110 | **115.192** | **1,82** |
-| iOS     | 23.336 | 185.497 | 77,80 → 94,00 | **+16,20**★ | 2 → 2 | 0  | 44,90 → 45,00 | **+0,10** | 808.417 | 556.491 | **251.926** | **1,36** |
+| Android | 23.632 | 189.796 | 59,00 → 69,80 | **+10,80**★ | 1 → 2 | **+1**★ | 38,57 → 38,67 | +0,10 | 609.238 | 569.388 | 39.850 | 0,21 |
+| Desktop | 7.939  | 63.370  | 63,20 → 73,60 | **+10,40**★ | 1 → 2 | **+1**★ | 39,33 → 39,43 | +0,10 | 305.302 | 190.110 | 115.192 | 1,82 |
+| iOS     | 23.336 | 185.497 | 77,80 → 94,00 | **+16,20**★ | 2 → 2 | 0  | 44,90 → 45,00 | +0,10 | 808.417 | 556.491 | 251.926 | 1,36 |
 
 > **Notas:**  
-> • Valores marcados com **★** indicam **diferença estatisticamente significativa** entre Tratamento e Controle dentro do segmento (teste **Mann–Whitney**, p < 0,05). **AOV** não apresentou diferenças significativas nos segmentos mostrados.
-> • As **medianas** (GMV/pedidos/AOV) vêm da **amostra**; “Usuários (Trat., amostra)” reflete o tamanho coletado.  
-> • As **métricas financeiras** foram calculadas **sobre 100% da base**; por isso mostramos “Usuários (Trat., base)”.
+> • **★** indica **diferença estatisticamente significativa** entre Tratamento e Controle dentro do segmento (teste **Mann–Whitney**, p < 0,05). 
+> • As **medianas** (GMV/pedidos/AOV) vêm de **amostras** da base de dados; “Usuários (Trat., amostra)” reflete o tamanho coletado.  
+> • As **métricas financeiras** foram calculadas **sobre 100% da base**.
 > • **Windows Phone:** este segmento foi **omitido** da tabela por ter **pouquíssimos usuários** no Tratamento/Controle, o que gera **estimativas instáveis** (alta variância) e risco de leitura equivocada. 
 
 > **Break-even (Plataforma)**  
-> **Desktop:** Precisa **R\$ 13,04** | Entregou **R\$ 20,95** | Gap **+R\$ 7,91** | **Lucro/usuário R\$ 1,82** → **OK**  
-> **iOS:** Precisa **R\$ 13,04** | Entregou **R\$ 18,95** | Gap **+R\$ 5,91** | **Lucro/usuário R\$ 1,36** → **OK**  
-> **Android:** Precisa **R\$ 13,04** | Entregou **R\$ 13,96** | Gap **+R\$ 0,91** | **Lucro/usuário R\$ 0,21** → **No limite**  
+> **Desktop:** Necessário **R\$ 13,04** | Entregou **R\$ 20,95** | Gap **+R\$ 7,91** | **Lucro/usuário R\$ 1,82** → **OK**  
+> **iOS:** Necessário **R\$ 13,04** | Entregou **R\$ 18,95** | Gap **+R\$ 5,91** | **Lucro/usuário R\$ 1,36** → **OK**  
+> **Android:** Necessário **R\$ 13,04** | Entregou **R\$ 13,96** | Gap **+R\$ 0,91** | **Lucro/usuário R\$ 0,21** → **No limite**  
 > **Windows Phone:** Entregou **R\$ 10,46** | Gap **−R\$ 2,58** | **Lucro/usuário −R\$ 0,59** → **NEG (N pequeno)**
 
 **Figura 5 - Mediana GMV/AOV/Pedidos por usuário (Plataforma)**
@@ -252,21 +245,21 @@ c) Pedidos por usuário
 **Figura 6 - Heavy Users por Plataforma**
 ![Bars Heavy Users](assets/segments/bars_platform_heavy_rate.png)
 
-- **Android:** em **mediana**, GMV/usuário **+R\$10,80** (59,0 → 69,8), **pedidos** sobem **1 → 2**, **AOV** estável **(+R\$0,10)**.  
-  **Heavy rate**: ~**+6,1 p.p.** (28,6% → 34,7%).  
-  **Financeiro (100% da base):** **lucro/usuário ≈ R$ +0,21**.
+**Interpretação**
 
-- **Desktop:** em **mediana**, GMV/usuário **+R\$10,40** (63,2 → 73,6), **pedidos** sobem **1 → 2**, **AOV** estável **(+R\$0,10)**.  
-  **Heavy rate**: ~**+6,7 p.p.** (28,9% → 35,6%).  
-  **Financeiro:** **lucro/usuário ≈ R$ +1,82**.
+A análise por plataforma mostra que o efeito do cupom não foi homogêneo entre os usuários:
 
-- **iOS:** em **mediana**, GMV/usuário **+R\$16,20** (77,8 → 94,0), **pedidos** estáveis **(2 → 2)**, **AOV** estável **(+R\$0,10)**.  
-  **Heavy rate**: ~**+6,7 p.p.** (33,0% → 39,7%).  
-  **Financeiro:** **lucro/usuário ≈ R$ +1,36**.
+* **Android**: os usuários aumentaram o GMV mediano em cerca de **R\$10,80**, e passaram de **1 para 2 pedidos no período**. O ticket médio (AOV) permaneceu estável, e a proporção de heavy users cresceu em torno de **+6 p.p.**. Apesar desses sinais positivos de engajamento, o retorno financeiro líquido foi praticamente nulo (**≈R\$0,21 por usuário**). Isso indica que, embora o cupom tenha gerado comportamento mais ativo, o ganho incremental ainda é muito baixo para compensar o custo do incentivo.
+
+* **Desktop**: apresentou crescimento consistente, com GMV mediano **+R\$10,40** e progressão de **1 para 2 pedidos por usuário**, além de estabilidade no AOV. O percentual de heavy users também subiu **+6,7 p.p.**. Diferentemente do Android, o resultado financeiro foi bastante favorável, gerando **R\$1,82 de lucro incremental por usuário**. Ou seja, nesse canal, os cupons se mostraram uma alavanca eficiente tanto de engajamento quanto de retorno financeiro.
+
+* **iOS**: foi a plataforma com maior variação de GMV mediano (**+R\$16,20**, 77,8 → 94,0), mas sem mudança na frequência de pedidos (estável em 2). Ainda assim, a proporção de heavy users aumentou em **+6,7 p.p.**, e o impacto financeiro foi positivo (**+R\$1,36 por usuário**). Isso sugere que, mesmo sem elevação do número típico de pedidos, os usuários iOS responderam ao cupom gastando mais no total, tornando a campanha eficiente também neste segmento.
+
+Os resultados indicam que **Desktop e iOS devem ser priorizados** nas próximas campanhas, pois além de engajarem os clientes, entregam ROI positivo. Já o **Android**, apesar de estimular comportamento mais ativo, exige ajustes  para que o investimento seja de fato rentável.
 
 **Ações sugeridas:**  
 - **Priorizar** esforço em **Desktop** e **iOS** (melhor retorno por usuário, com AOV estável).  
-- Em **Android**, manter a alavanca, mas **testar cupom menor e/ou gatilhos mais precisos** (ex.: 2º carrinho, pós-hiato) para **elevar o lucro por usuário**.
+- Em **Android**, manter a oferta de cupons, mas **testar valor menor e/ou gatilhos mais precisos** (ex.: 2º carrinho, pós-hiato) para **elevar o lucro por usuário**.
 
 **KPIs a acompanhar:**
 * **lucro/usuário ≥ 0** por plataforma
@@ -277,35 +270,36 @@ c) Pedidos por usuário
 
 **3) RFM (111–555)**  
 
-**Tabela 5 – RFM (Top 5 por população do Tratado, medianas + AOV)**
+**Tabela 5 – RFM (Top 5 com mais usuários em Tratamento, medianas + AOV)**
 
 | RFM | Usuários (Trat.) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos | AOV mediano (Ctrl → Trat) | Δ AOV |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 555 | 5.391 | 409,3 → 415,2 | **+5,9** | 9 → 9 | 0 | 47,10 → 46,94 | **−0,16** |
-| 111 | 3.192 | 25,2 → 25,9   | **+0,7** | 1 → 1 | 0 | 25,20 → 25,90 | **+0,70** |
-| 112 | 2.904 | 44,0 → 44,5   | **+0,5** | 1 → 1 | 0 | 44,00 → 44,50 | **+0,50** |
-| 211 | 2.310 | 25,1 → 25,0   | **−0,1** | 1 → 1 | 0 | 25,10 → 25,00 | **−0,10** |
-| 455 | 2.054 | 343,6 → 332,8 | **−10,8** | 7 → 7 | 0 | 46,72 → 45,64 | **−1,08** |
+| 555 | 5.391 | 409,3 → 415,2 | +5,9 | 9 → 9 | 0 | 47,10 → 46,94 | −0,16 |
+| 111 | 3.192 | 25,2 → 25,9   | +0,7 | 1 → 1 | 0 | 25,20 → 25,90 | +0,70 |
+| 112 | 2.904 | 44,0 → 44,5   | +0,5 | 1 → 1 | 0 | 44,00 → 44,50 | +0,50 |
+| 211 | 2.310 | 25,1 → 25,0   | −0,1 | 1 → 1 | 0 | 25,10 → 25,00 | −0,10 |
+| 455 | 2.054 | 343,6 → 332,8 | −10,8 | 7 → 7 | 0 | 46,72 → 45,64 | −1,08 |
 
 > **Notas:**
 > • A grade RFM tem **muitas células** (até **125**). Várias têm **N pequeno**, o que torna estimativas de **ROI voláteis**.
-> • O objetivo da RFM aqui é **direcionamento** (quem merece mais/menos incentivo). 
-> • As **medianas** (GMV/pedidos/AOV) vêm da **amostra**; “Usuários (Trat., amostra)” reflete o tamanho coletado.
+> • O objetivo da RFM é **direcionamento** (quem merece mais/menos incentivo). 
+> • As **medianas** (GMV/pedidos/AOV) vêm de **amostras da base completa**; “Usuários (Trat., amostra)” reflete o tamanho coletado.
 > • **Top-5 por população**: não houve diferenças estatisticamente significativas entre Tratamento e Controle nas células apresentadas (Mann–Whitney, p ≥ 0,05).
 
+**Interpretação**
 - Dentro de cada célula, as mudanças em **medianas** são, em geral, **pequenas** (Δ GMV mediano baixo; **Δ Ped mediano = 0** em todas as top-5).
 - Há células de **alto valor** (ex.: **555**) com ganho discreto de GMV mediano, e outras com **Δ negativo** (ex.: **455**), sugerindo **canibalização/ineficiência** em partes da grade.
-- O ganho global observado no agregado vem muito de **composição de mix** (maior participação de células de valor alto no Tratamento) e não de grandes mudanças “dentro” de cada célula.
+- O ganho global observado no agregado se origina em boa parte de **composição de mix** (maior participação de células de valor alto no Tratamento) e não de grandes mudanças internas de cada célula.
 
 **Ações sugeridas**
 
-- **Baixo RFM (11\*, 21\*, 31\*)**: cupom **mais agressivo** e com **gatilhos de progressão** (empurrar **1→2→3** pedidos).
+- **Baixo RFM (11\*, 21\*, 31\*)**: cupom **mais agressivo** e com **gatilhos de progressão** (conduzir **1→2→3** pedidos).
 - **Médio RFM (4\*4, 45\*)**: cupom **moderado**, focado em **frequência** (evitar **Δ AOV** negativo).
 - **Alto RFM (54\*, 55\*)**: cupom **baixo/ocasional** ou **condicionado** (categorias novas, horários frios), para **evitar canibalização**; atenção às células com **Δ GMV/AOV negativos** (ex.: **455**).
 
 **KPIs a acompanhar:**
 
-- **Progressão de faixa RFM** (movimento das caixinhas de baixo → médio → alto).
+- **Progressão de faixa RFM** (movimento das células de baixo → médio → alto).
 - **Frequência mediana** nas faixas baixas.
 - **Δ GMV mediano ≥ 0** e **AOV estável** dentro das células priorizadas.
 
@@ -315,47 +309,70 @@ c) Pedidos por usuário
 
 | Segmento | Usuários (Trat.) | GMV mediano (Ctrl → Trat) | Δ GMV | Pedidos medianos (Ctrl → Trat) | Δ Pedidos |
 |---|---:|---:|---:|---:|---:|
-| Recorrente | 55.348 | 66,00 → 79,60 | **+13,60** | 1 → 2 | **+1** |
+| Recorrente | 55.348 | 66,00 → 79,60 | +13,60 | 1 → 2 | +1 |
 
-- **O que vimos:** clientes novos não existem na amostra, pois a base completa contém apenas usuários com ao menos um pedido anterior ao período de análise, então a “conversão=1,0” é espúria.  
-- **O que fazer:** incluir **usuários sem pedido** na base de teste (grupo de controle e tratado) para medir **1ª compra**; só então definir política específica para “novos”.
+**Interpretação**
+
+Clientes novos não existem na amostra, pois a base completa contém apenas usuários com ao menos um pedido anterior ao período de análise, então a “conversão=1,0” é espúria.  
+
+**Ações sugeridas**
+
+Incluir **usuários sem pedido** na base de teste (grupo de controle e tratado) para medir **1ª compra**; só então definir política específica para “novos”.
 
 ---
 
 ### 3.3. Recomendações para Segmentação
 
-**Frequência (Heavy vs Não-heavy)**  
-- **Não-heavy (1–2 pedidos):** manter cupom **direcionado** com **gatilhos de progressão** (pós-1º/2º pedido; reativação após X dias).  
-- **Heavy (≥3):** cupom **baixo/ocasional** ou **condicionado** (categorias/horários frios), para **evitar canibalização**.
+**Frequência (Heavy vs Não-heavy)**
 
-**Plataforma**  
-- **Desktop e iOS:** **priorizar** (boa resposta em mediana); manter *capping* para não diluir margem.  
-- **Android:** manter a alavanca, mas **testar cupom menor** e/ou **mínimo de carrinho** (ex.: “R\$10 off ≥ R\$40”) e **gatilhos** (2º carrinho, reativação 7–14 dias, abandono).
+* **Não-heavy (1–2 pedidos):** são clientes em estágio inicial de relacionamento com o iFood. O cupom deve ser usado como ferramenta de **progressão de hábito**, estimulando que avancem do 1º para o 2º pedido e depois para o 3º. Recomenda-se desenhar gatilhos de progressão claros, como **incentivos logo após o 1º pedido** ou **após períodos de inatividade**, para consolidar recorrência.
+* **Heavy (≥3):** já possuem hábito consolidado e tendem a usar o cupom mesmo sem aumentar seu gasto total, o que gera **canibalização**. Para esse grupo, a recomendação é reduzir a frequência ou o valor do cupom, aplicando-o apenas em situações estratégicas, como incentivar categorias pouco exploradas ou horários de menor demanda, de forma a gerar aprendizado sem comprometer margem.
 
-**RFM**  
-- Usar **tiers agregados** (Baixo / Médio / Alto) em vez de 125 células.  
-- **Baixo/Médio:** incentivo para **frequência** (1→2→3). **Alto:** incentivo **seletivo/ocasional**, evitando gastar onde o hábito já existe.
+**Plataforma**
 
-**Métricas por segmento**  
-- **GMV mediano por usuário** e **% heavy (≥3)**; monitorar **p95** para oportunidades de topo sem queda de **AOV**.
+* **Desktop e iOS:** demonstraram **resposta positiva consistente**, com maior retorno financeiro por usuário. Vale priorizar esses canais em campanhas futuras, mantendo um limite (*capping*) no número de cupons enviados para evitar diluição do retorno.
+* **Android:** apresentou resultado financeiro apenas no limite, com ROI próximo de zero. Aqui, o cupom pode ser mantido, mas em **formato otimizado**: valores menores, exigência de **mínimo de carrinho** (ex.: “R\$10 off em pedidos ≥ R\$40”) ou gatilhos específicos como reativação após hiato ou incentivo ao 2º pedido.
+
+**RFM**
+
+* A segmentação completa por RFM gera 125 combinações possíveis, o que torna a análise difícil de escalar e aplicar. Para a operação, recomenda-se trabalhar com **tiers agregados** (Baixo, Médio e Alto).
+
+  * **Baixo/Médio RFM:** clientes menos recentes, de baixa frequência e baixo gasto devem receber incentivos mais fortes e direcionados à progressão de pedidos (1→2→3).
+  * **Alto RFM:** já apresentam alto engajamento e gasto. Nesse grupo, cupons devem ser usados de forma **seletiva e ocasional**, em campanhas específicas (lançamento de categorias, períodos de baixa demanda), evitando gasto desnecessário com quem já compra regularmente.
+
+**Métricas por segmento**
+
+* Para monitorar a efetividade da estratégia, recomenda-se acompanhar métricas robustas (não sensíveis a outliers) como:
+
+  * **GMV mediano por usuário**.
+  * **% de heavy users (≥3 pedidos)**, como indicador de progressão de frequência.
+  * **p95 de GMV/pedidos**, que ajuda a identificar oportunidades em clientes de maior gasto sem comprometer o ticket médio (**AOV**).
 
 ---
 
-## 4. Próximos Passos 
+## 4. Próximos Passos
 
 ### 4.1. Próximos passos recomendados
 
 #### Redesenhar a política de cupons
 
-* **Evitar heavy users**: já compram com alta frequência e consomem cupom sem gerar vendas extras, resultando em **prejuízo médio de até R\$2,80 por usuário** (canibalização), como mostra o quadro de break-even (item 4.2).
-* **Focar em não-heavy e clientes inativos**: maior potencial de progressão de frequência e reativação. Ex.: clientes que fizeram apenas **1 pedido nos últimos 3 meses** podem receber incentivo para chegar a 2–3 pedidos.
-* **Cupom condicional (mínimo de gasto)**: ex. “R\$10 de desconto em compras ≥ R\$40”. Esse modelo ajuda a **elevar o ticket médio**, hoje observado como estável.
+* **Evitar heavy users**: já compram com alta frequência e consomem cupom sem gerar vendas extras, resultando em **prejuízo médio de até R\$2,80 por usuário** (canibalização).
+
+  * Recomenda-se restringir cupons para esse grupo apenas em situações experimentais (ex.: categorias novas, horários frios), evitando desperdício em clientes já consolidados.
+
+* **Focar em não-heavy e clientes inativos**: maior potencial de progressão de frequência e reativação. Exemplo: clientes que fizeram apenas **1 pedido nos últimos 3 meses** podem receber incentivo para chegar a 2–3 pedidos.
+
+* **Cupom condicional (mínimo de gasto)**: por exemplo, “R\$10 de desconto em compras ≥ R\$40”. Esse modelo ajuda a **elevar o ticket médio**, hoje observado como estável.
+
 * **Testar frete grátis como alternativa**: pode ser mais eficiente em usuários sensíveis ao custo logístico, sobretudo novos clientes.
 
 #### Direcionar por plataforma
 
 * **Priorizar Desktop e iOS**: ROI positivo, chegando a **R\$1,82 de lucro incremental por usuário**, como mostra o quadro de break-even (item 4.2).
-* **Android**: ROI próximo de zero (**R\$0,21**). Recomenda-se **reduzir o valor do cupom** ou aplicar **gatilhos mais específicos** (ex.: desconto apenas no 2º pedido ou para reativação após hiato).
+
+* **Android**: ROI próximo de zero (**R\$0,21**), mas com sinais de **maior engajamento** (pedidos 1→2; heavy rate +6 p.p.).
+
+  * Recomendação: **reduzir valor do cupom** e/ou aplicar **gatilhos mais específicos** (ex.: desconto apenas no 2º pedido ou reativação após hiato), de forma a capturar o engajamento já observado e transformá-lo em ROI positivo.
 
 #### Estratégia RFM simplificada
 
@@ -365,24 +382,25 @@ c) Pedidos por usuário
 
 #### Refinar desenho experimental
 
-* **Randomização estratificada** por heavy users (ou reponderação posterior) → reduz risco de distorções.
-* Testar diferentes grupos:
-
+* **Randomização estratificada** por heavy users (ou reponderação posterior) → reduz risco de distorções no mix.
+* **Checkpoints de governança**: monitorar resultados por célula; se um segmento permanecer **NEG (lucro/usuário < 0)** em duas leituras consecutivas com base relevante (≥ 1.000 tratados), suspender o cupom até redesenho.
+* Testar diferentes grupos de incentivo:
   * Controle (sem cupom).
   * Cupom fixo com gasto mínimo.
   * Cupom frete grátis com gasto mínimo.
 * **Incluir novos clientes** na base do experimento para medir taxa de conversão da 1ª compra.
-* Benefício esperado: **comparar formatos de incentivo** e **evitar gastos em segmentos onde o ROI já se mostrou negativo**.
+
+**Benefício esperado**: comparar formatos de incentivo em condições mais justas, evitar gastos em segmentos onde o ROI já se mostrou negativo e garantir ajustes rápidos quando a campanha destruir valor.
 
 ---
 
 ### 4.2 Previsão de impacto (financeiro e não financeiro)
 
-### Impacto financeiro atual (teste A/B realizado)
+#### Impacto financeiro atual (teste A/B realizado)
 
 **Quadro – Break-even por célula (resumo)**
 
-| Célula    | Precisa | Entregou |    Gap | Lucro/usuário |   Status  |
+| Célula    | Necessário | Entregou |    Gap | Lucro/usuário |   Status  |
 | --------- | ------: | -------: | -----: | ------------: | :-------: |
 | Geral     |   13,04 |    17,13 |  +4,09 |          0,94 |     OK    |
 | Android   |   13,04 |    13,96 |  +0,91 |          0,21 | No limite |
@@ -398,19 +416,15 @@ c) Pedidos por usuário
 * **NEG**: *Entregou* < **R\$13,04** → pausar ou recalibrar.
   **Checkpoints:** avaliar semanal/quinzenal; se uma célula ficar **NEG em 2 leituras seguidas** com **N tratado ≥ 1.000**, suspender até novo desenho.
 
-**Interpretação executiva**:
+**Interpretação atual**:
 
-* Desktop e iOS entregaram ROI confortável.
-* Android ficou no limite.
-* Heavy e não-heavy tiveram destruição de valor, reforçando a necessidade de segmentar melhor.
+A análise financeira do teste mostra que, no agregado, a campanha gerou retorno positivo. No entanto, os resultados variam bastante por segmento. As plataformas **Desktop e iOS** apresentaram ROI confortável, sustentando expansão seletiva nesses canais. O segmento **Android** também mostrou crescimento em engajamento (pedidos 1→2 e aumento da base de heavy users em +6 p.p.), mas o retorno líquido ficou praticamente no zero a zero (R$0,21 por usuário), o que indica necessidade de calibragem no valor e nos gatilhos do cupom. Já os grupos **heavy e não-heavy**, analisados isoladamente, apresentaram destruição de valor: ambos tiveram prejuízo médio por usuário, confirmando que a **política de cupons aplicada de forma ampla não se sustenta sem segmentação**. Esses achados reforçam que a eficácia do incentivo depende não apenas do valor oferecido, mas de um direcionamento mais estratégico dos públicos.
 
 #### Impacto esperado com as recomendações
 
-* **Cenário com ajustes** (foco em segmentos rentáveis e exclusão dos negativos): projeção de **margem incremental anual de aproximadamente R\$4.8 milhões**.
-* Esse ganho vem de duas frentes:
-
-  1. **Cortar o desperdício** em segmentos onde o cupom gera prejuízo (heavy e parte de Android).
-  2. **Redirecionar investimento** para perfis de maior potencial (não-heavy inativos, Desktop/iOS, clientes de baixo RFM).
+Com os ajustes propostos (priorização de segmentos rentáveis e exclusão de grupos deficitários) a projeção é de uma **margem incremental anual de aproximadamente R$4,8 milhões**. Esse ganho vem de duas frentes principais: 
+- (1) corte do desperdício em heavy users e parte do Android, onde o cupom gera prejuízo, e 
+- (2) redirecionamento do investimento para perfis de maior potencial, como não-heavy inativos, Desktop/iOS e clientes de baixo RFM.
 
 #### Impacto não financeiro
 
@@ -419,38 +433,47 @@ c) Pedidos por usuário
 * **Governança de testes**: aprendizados mais rápidos e confiáveis com experimentos estratificados, reduzindo risco de decisões equivocadas.
 ---
 
-### 4.3. Melhorias no processo/teste
+### 4.3 Melhorias no processo e no desenho de testes
 
-- **Checkpoints semanais/quinzenais**: implementar uma rotina de monitoramento dos segmentos. Se um grupo apresentar resultado **NEG (lucro/usuário < 0) em duas leituras consecutivas** com base de usuários tratada relevante (≥ 1.000), o cupom deve ser suspenso até redesenho. Essa prática garante que não haja destruição de valor prolongada.  
+Para garantir que futuras campanhas de cupons sejam sustentáveis e gerem aprendizado confiável, é necessário fortalecer a governança e a instrumentação dos testes. As seguintes práticas são recomendadas:
 
-- **Métricas mais robustas**: complementar médias com indicadores como **mediana, p95 e heavy rate**. Isso reduz distorções causadas por poucos usuários extremos e traz uma leitura mais fiel do comportamento típico do cliente.  
+* **Checkpoints semanais/quinzenais**
+  Criar uma rotina de monitoramento por segmento. Caso um grupo apresente resultado **NEG (lucro/usuário < 0) em duas leituras consecutivas**, com base tratada relevante (≥ 1.000 usuários), o cupom deve ser suspenso até redesenho. Essa medida impede que perdas persistam sem correção.
 
-- **Automatização do cálculo de break-even**: já implementada via `break_even_table_spark`, deve ser usada como ferramenta de rotina. Ela permite identificar rapidamente onde a campanha se paga ou não, sem depender de análises manuais pontuais.  
+* **Uso de métricas mais robustas**
+  Além da média, acompanhar indicadores como **mediana, p95 e heavy rate**. Esses indicadores reduzem a distorção causada por poucos casos extremos e oferecem uma leitura mais fiel do comportamento típico e do potencial de cauda.
 
-- **Dashboards executivos**: consolidar os resultados em um painel simples (segmento × ROI × break-even). Dessa forma, stakeholders podem acompanhar em tempo real onde o incentivo está gerando valor e onde é necessário ajuste, aumentando a agilidade de decisão.  
+* **Automatização do cálculo de break-even**
+  Já implementada via `break_even_table_spark`, deve ser consolidada como ferramenta de rotina. Isso permite identificar rapidamente se cada célula se paga ou não, trazendo objetividade e agilidade à decisão.
+
+* **Dashboards executivos**
+  Construir um painel simples (segmento × ROI × break-even) para stakeholders. Com isso, líderes conseguem acompanhar em tempo quase real onde o incentivo está gerando valor e onde ajustes são necessários, sem depender de análises pontuais.
+
+Em conjunto, essas práticas aumentam a disciplina no acompanhamento e tornam o processo de experimentação mais confiável, rápido e orientado a evidências.
 
 ---
 
-### 4.4. Premissas adotadas
+### 4.4 Premissas adotadas
 
-* **Financeiras:**
+A análise e as projeções aqui apresentadas foram feitas sob premissas claras, que devem ser consideradas na interpretação dos resultados:
+
+* **Financeiras**
 
   * *Take rate* fixo em **23%**.
-  * Valor de cupom em **R\$10**, pago pelo iFood.
-  * Taxa de resgate em **30%**.
+  * Valor do cupom em **R\$10**, custo integral do iFood.
+  * Taxa média de resgate em **30%**.
 
-* **Horizonte de análise:**
+* **Horizonte de análise**
 
-  * **≈1 mês**, correspondente à janela do experimento.
-  * Usado como **proxy de LTV de curto prazo**, sem capturar efeitos de retenção de longo prazo ou sazonalidade.
+  * Janela de aproximadamente **1 mês** (período do experimento, excluindo registros isolados fora desse período).
+  * Considerado como **proxy de LTV de curto prazo**, sem capturar retenção futura ou efeitos sazonais.
 
-* **Extrapolação de impacto:**
+* **Extrapolação de impacto**
 
   * Projeções anualizadas assumem **constância da taxa de resgate e da elasticidade observada**.
+  * Eventuais mudanças nesses fatores podem alterar significativamente os resultados.
 
-* **População de novos clientes:**
+* **População de novos clientes**
 
-  * Assumida relevante para impacto total, mas **não mensurada no dataset**.
-  * Necessário incluir explicitamente em próximos testes para medir **conversão de primeira compra**.
-
-
+  * Assumida como relevante para o negócio, mas **não mensurada na base** analisada.
+  * Deve ser incluída em futuros testes para avaliar o impacto na **conversão da 1ª compra**.
